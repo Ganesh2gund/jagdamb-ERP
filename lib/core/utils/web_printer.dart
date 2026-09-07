@@ -1,4 +1,4 @@
-import 'dart:html' as html;
+import 'platform_html.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../constants/app_constants.dart';
 import '../../services/api_client.dart';
@@ -419,9 +419,7 @@ class WebPrinter {
 </html>
 ''';
 
-    final blob = html.Blob([htmlContent], 'text/html');
-    final url = html.Url.createObjectUrlFromBlob(blob);
-    html.window.open(url, '_blank');
+    openHtmlContent(htmlContent);
   }
 
   static void printRestaurantReceipt({
@@ -539,8 +537,6 @@ class WebPrinter {
 </html>
 ''';
 
-    final blob = html.Blob([htmlContent], 'text/html');
-    final url = html.Url.createObjectUrlFromBlob(blob);
-    html.window.open(url, '_blank');
+    openHtmlContent(htmlContent);
   }
 }
