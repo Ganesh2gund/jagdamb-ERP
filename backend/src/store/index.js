@@ -38,23 +38,10 @@ class MongoBackedStore {
 
       // 1. Rooms
       const dbRooms = await Room.find().lean();
-      if (dbRooms && dbRooms.length > 0) {
-        this.data.rooms = dbRooms.map(r => {
-          const { _id, __v, ...rest } = r;
-          return rest;
-        });
-      } else {
-        // Seed default initial rooms if DB is brand new
-        const initialRooms = [
-          { id: 'r101', number: '101', floor: 1, type: 'deluxe', pricePerNight: 2500, status: 'available', amenities: ['WiFi', 'AC', 'TV'], maxGuests: 2 },
-          { id: 'r102', number: '102', floor: 1, type: 'single', pricePerNight: 1500, status: 'available', amenities: ['WiFi', 'TV'], maxGuests: 1 },
-          { id: 'r201', number: '201', floor: 2, type: 'suite', pricePerNight: 4500, status: 'available', amenities: ['WiFi', 'AC', 'TV', 'Balcony', 'Mini Bar'], maxGuests: 3 },
-          { id: 'r202', number: '202', floor: 2, type: 'double', pricePerNight: 2000, status: 'available', amenities: ['WiFi', 'AC'], maxGuests: 2 },
-        ];
-        await Room.insertMany(initialRooms);
-        this.data.rooms = initialRooms;
-        console.log(`✅ Seeded ${initialRooms.length} initial rooms to MongoDB.`);
-      }
+      this.data.rooms = (dbRooms || []).map(r => {
+        const { _id, __v, ...rest } = r;
+        return rest;
+      });
 
       // 2. Bookings
       const dbBookings = await Booking.find().sort({ createdAt: -1 }).lean();
