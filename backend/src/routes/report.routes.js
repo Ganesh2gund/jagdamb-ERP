@@ -18,6 +18,7 @@ import {
   Room,
   Settings,
   ReportCycle,
+  Invoice,
 } from '../models/index.js';
 import { store } from '../store/index.js';
 import { hotelSettings } from './settings.routes.js';
@@ -39,7 +40,7 @@ export async function initReportCycle() {
   if (mongoose.connection.readyState !== 1) return;
 
   try {
-    let cycle = await ReportCycle.findOne().sort({ createdAt: -1 });
+    let cycle = await ReportCycle.findOne().sort({ cycleNumber: -1, createdAt: -1 });
     if (!cycle) {
       cycle = await ReportCycle.create({
         cycleNumber: 1,
@@ -49,6 +50,9 @@ export async function initReportCycle() {
       });
       console.log('✅ Initialized 10-Day Report Cycle #1 in MongoDB Atlas.');
     }
+
+    // Ensure only 1 active cycle document exists in MongoDB Atlas (prevent accumulation)
+    await ReportCycle.deleteMany({ _id: { $ne: cycle._id } }).catch(() => {});
 
     currentCycle = {
       cycleNumber: cycle.cycleNumber || 1,
@@ -86,6 +90,7 @@ export async function performDataCleanup(reason = 'Manual/Scheduled Cleanup') {
       await Expense.deleteMany({});
       await Guest.deleteMany({});
       await Notification.deleteMany({});
+      await Invoice.deleteMany({});
 
       // Reset occupied room status back to available
       await Room.updateMany({}, {
@@ -97,19 +102,28 @@ export async function performDataCleanup(reason = 'Manual/Scheduled Cleanup') {
         checkOutDate: null,
       });
 
-      // Advance cycle
+      // Advance cycle & update the same single record (Singleton pattern)
       currentCycle.cycleNumber += 1;
       currentCycle.startDate = new Date();
       currentCycle.cleanupScheduledAt = null;
       currentCycle.isCleanupActive = false;
 
-      await ReportCycle.create({
-        cycleNumber: currentCycle.cycleNumber,
-        startDate: currentCycle.startDate,
-        cleanupScheduledAt: null,
-        isCleanupActive: false,
-        lastCleanupAt: new Date(),
-      });
+      const activeCycle = await ReportCycle.findOneAndUpdate(
+        {},
+        {
+          cycleNumber: currentCycle.cycleNumber,
+          startDate: currentCycle.startDate,
+          cleanupScheduledAt: null,
+          isCleanupActive: false,
+          lastCleanupAt: new Date(),
+        },
+        { upsert: true, new: true }
+      );
+
+      // Keep only this 1 document in reportcycles
+      if (activeCycle) {
+        await ReportCycle.deleteMany({ _id: { $ne: activeCycle._id } }).catch(() => {});
+      }
     }
 
     // 2. Reset in-memory cache arrays in store
@@ -298,8 +312,8 @@ export default async function reportRoutes(fastify) {
     currentCycle.isCleanupActive = true;
 
     if (mongoose.connection.readyState === 1) {
-      await ReportCycle.updateOne(
-        { cycleNumber: currentCycle.cycleNumber },
+      await ReportCycle.findOneAndUpdate(
+        {},
         { cleanupScheduledAt: scheduledAt, isCleanupActive: true, lastDownloadedAt: new Date() }
       ).catch(e => console.error('Error updating cleanup timer in Mongo:', e.message));
     }
@@ -321,8 +335,8 @@ export default async function reportRoutes(fastify) {
     currentCycle.isCleanupActive = false;
 
     if (mongoose.connection.readyState === 1) {
-      await ReportCycle.updateOne(
-        { cycleNumber: currentCycle.cycleNumber },
+      await ReportCycle.findOneAndUpdate(
+        {},
         { cleanupScheduledAt: null, isCleanupActive: false }
       ).catch(e => console.error('Error cancelling cleanup timer in Mongo:', e.message));
     }
