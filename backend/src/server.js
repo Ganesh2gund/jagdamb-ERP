@@ -3,6 +3,10 @@ import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import jwt from '@fastify/jwt';
 
+import connectDB from './db/connection.js';
+import { store } from './store/index.js';
+import { loadHotelSettingsFromDB } from './routes/settings.routes.js';
+
 import authRoutes from './routes/auth.routes.js';
 import roomRoutes from './routes/rooms.routes.js';
 import bookingRoutes from './routes/bookings.routes.js';
@@ -19,7 +23,7 @@ import whatsappRoutes from './routes/whatsapp.routes.js';
 import settingsRoutes from './routes/settings.routes.js';
 
 const fastify = Fastify({
-  logger: true,
+  logger: false, // Clean console output
 });
 
 // Register CORS for Flutter Web, Desktop, Mobile
@@ -47,9 +51,9 @@ fastify.decorate('authenticate', async (request, reply) => {
 fastify.get('/', async () => {
   return {
     success: true,
-    message: '🏨 Hotel ERP Fastify API is running smoothly!',
+    message: '🏨 Hotel ERP Fastify API is running smoothly with MongoDB Atlas!',
     health: '/api/health',
-    version: '1.0.0'
+    version: '1.1.0'
   };
 });
 
@@ -60,7 +64,8 @@ fastify.get('/api/health', async () => {
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
     service: 'Hotel ERP Fastify API Server',
-    version: '1.0.1'
+    database: store.isConnected() ? 'MongoDB Atlas (Connected)' : 'Local In-Memory (Fallback)',
+    version: '1.1.0'
   };
 });
 
@@ -84,14 +89,22 @@ const PORT = process.env.PORT || 5000;
 const HOST = process.env.HOST || '0.0.0.0';
 
 try {
+  // Connect to MongoDB Atlas
+  await connectDB();
+
+  // Sync data store and hotel settings with MongoDB Atlas
+  await store.init();
+  await loadHotelSettingsFromDB();
+
   await fastify.listen({ port: PORT, host: HOST });
   console.log(`\n======================================================`);
   console.log(`🚀 Hotel ERP Fastify Server is running!`);
   console.log(`📡 Local:    http://127.0.0.1:${PORT}`);
   console.log(`🌐 Network:  http://${HOST}:${PORT}`);
   console.log(`🏥 Health:   http://127.0.0.1:${PORT}/api/health`);
+  console.log(`🍃 Database: MongoDB Atlas (Cluster0)`);
   console.log(`======================================================\n`);
 } catch (err) {
-  fastify.log.error(err);
+  fastify.log.error ? fastify.log.error(err) : console.error(err);
   process.exit(1);
 }
