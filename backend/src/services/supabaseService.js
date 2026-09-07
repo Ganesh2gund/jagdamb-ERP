@@ -149,7 +149,13 @@ export class SupabaseMasterService {
 
   static async deleteCategory(name) {
     try {
-      const { error } = await supabase.from('restaurant_categories').delete().eq('name', name);
+      const clean = String(name).trim();
+      // 1. Cascade delete all dishes under this category from menu_items
+      const { error: itemErr } = await supabase.from('menu_items').delete().ilike('category', clean);
+      if (itemErr) console.error('❌ Supabase deleteCategory cascade menu_items error:', itemErr.message);
+
+      // 2. Delete the category itself from restaurant_categories
+      const { error } = await supabase.from('restaurant_categories').delete().ilike('name', clean);
       if (error) throw error;
       return true;
     } catch (err) {

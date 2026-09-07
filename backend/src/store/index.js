@@ -593,11 +593,20 @@ class MongoBackedStore {
     const idx = this.data.restaurantCategories.indexOf(clean);
     if (idx !== -1) {
       this.data.restaurantCategories.splice(idx, 1);
-      // Delete from Supabase Cloud (Master)
+
+      // Cascade remove dishes of this category in memory
+      if (this.data.menuItems) {
+        this.data.menuItems = this.data.menuItems.filter(
+          m => String(m.category || '').trim().toLowerCase() !== clean.toLowerCase()
+        );
+      }
+
+      // Delete from Supabase Cloud (Master) - cascade deletes category & menu items
       SupabaseMasterService.deleteCategory(clean).catch(e => console.error('Error deleting category from Supabase:', e.message));
 
       if (this.isConnected()) {
         RestaurantCategory.deleteOne({ name: clean }).catch(e => console.error('Error deleting category in Mongo:', e.message));
+        MenuItem.deleteMany({ category: { $regex: new RegExp(`^${clean}$`, 'i') } }).catch(e => console.error('Error deleting category menu items in Mongo:', e.message));
       }
       return true;
     }

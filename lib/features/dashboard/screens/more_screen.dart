@@ -10,7 +10,6 @@ class MoreScreen extends StatelessWidget {
     const items = [
       _MoreItem(icon: Icons.assessment_outlined, label: '10-Day Report', route: '/report-cycle', color: AppColors.primary),
       _MoreItem(icon: Icons.restaurant_outlined, label: 'Restaurant', route: '/restaurant', color: AppColors.cleaning),
-      _MoreItem(icon: Icons.inventory_2_outlined, label: 'Inventory', route: '/inventory', color: AppColors.reserved),
       _MoreItem(icon: Icons.receipt_long_outlined, label: 'Expenses', route: '/expenses', color: AppColors.warning),
       _MoreItem(icon: Icons.settings_outlined, label: 'Settings', route: '/settings', color: AppColors.textSecondary),
     ];
