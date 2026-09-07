@@ -84,7 +84,15 @@ class AppRouter {
             routes: [
               GoRoute(
                 path: 'new',
-                builder: (context, state) => const NewBookingScreen(),
+                builder: (context, state) {
+                  final roomId = state.uri.queryParameters['roomId'];
+                  final checkInNowParam = state.uri.queryParameters['checkInNow'];
+                  final checkInNow = checkInNowParam == null ? true : (checkInNowParam != 'false');
+                  return NewBookingScreen(
+                    preselectedRoomId: roomId,
+                    initialCheckInNow: checkInNow,
+                  );
+                },
               ),
               GoRoute(
                 path: ':id',

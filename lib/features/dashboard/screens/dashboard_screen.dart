@@ -80,77 +80,114 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   void _showEditHotelNameDialog(BuildContext context) {
     final ctrl = TextEditingController(text: _hotelName);
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (dialogCtx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Row(
-          children: [
-            Icon(Icons.business_rounded, color: AppColors.primary, size: 22),
-            SizedBox(width: 8),
-            Text('होटल का नाम बदलें', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          ],
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (dialogCtx) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        content: Column(
+        padding: EdgeInsets.fromLTRB(
+          20, 12, 20,
+          MediaQuery.of(dialogCtx).viewInsets.bottom + 20,
+        ),
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'नया होटल नाम दर्ज करें (या Settings में जाकर भी अपडेट कर सकते हैं):',
-              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            Center(
+              child: Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(color: AppColors.grey300, borderRadius: BorderRadius.circular(2)),
+              ),
             ),
-            const SizedBox(height: 14),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(color: AppColors.primarySurface, borderRadius: BorderRadius.circular(12)),
+                  child: const Icon(Icons.business_rounded, color: AppColors.primary, size: 22),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('होटल का नाम बदलें', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, fontFamily: 'Inter')),
+                      SizedBox(height: 2),
+                      Text('यह नाम सभी रसीदों और रिपोर्ट्स पर दिखेगा', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                    ],
+                  ),
+                ),
+                IconButton(icon: const Icon(Icons.close, color: AppColors.textSecondary), onPressed: () => Navigator.pop(dialogCtx)),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Divider(height: 1),
+            const SizedBox(height: 16),
+            const Text('होटल का नया नाम (Hotel Name)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
             TextField(
               controller: ctrl,
               autofocus: true,
               decoration: InputDecoration(
-                hintText: 'उदा. Shree Ram Hotel',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-                prefixIcon: const Icon(Icons.hotel_rounded, size: 20),
+                hintText: 'उदा. Shree Ram Hotel & Restaurant',
+                prefixIcon: const Icon(Icons.hotel_rounded, color: AppColors.primary),
+                filled: true,
+                fillColor: AppColors.grey50,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+              ),
+            ),
+            const SizedBox(height: 22),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  final newName = ctrl.text.trim();
+                  if (newName.isEmpty) return;
+                  Navigator.pop(dialogCtx);
+                  setState(() => _hotelName = newName);
+
+                  try {
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setString('hotel_name', newName);
+                    WebPrinter.updateConfig(name: newName);
+                  } catch (_) {}
+
+                  try {
+                    await ApiClient.instance.put('/settings', body: {'hotelName': newName});
+                  } catch (_) {}
+
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('✅ होटल का नाम "$newName" अपडेट हो गया!'),
+                        backgroundColor: AppColors.success,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.check_circle_outline, size: 20),
+                label: const Text('अपडेट करें (Save Name)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  elevation: 1,
+                ),
               ),
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: const Text('रद्द करें (Cancel)'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            onPressed: () async {
-              final newName = ctrl.text.trim();
-              if (newName.isEmpty) return;
-              Navigator.pop(dialogCtx);
-              setState(() => _hotelName = newName);
-
-              try {
-                final prefs = await SharedPreferences.getInstance();
-                await prefs.setString('hotel_name', newName);
-                WebPrinter.updateConfig(name: newName);
-              } catch (_) {}
-
-              try {
-                await ApiClient.instance.put('/settings', body: {'hotelName': newName});
-              } catch (_) {}
-
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('✅ होटल का नाम "$newName" अपडेट हो गया!'),
-                    backgroundColor: AppColors.success,
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              }
-            },
-            child: const Text('अपडेट करें (Save)'),
-          ),
-        ],
       ),
     );
   }
@@ -504,14 +541,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
           icon: Icons.payments_outlined,
           color: AppColors.error,
           label: '$pending Pending Payments',
-          onTap: () => context.go('/payments'),
+          onTap: () => context.go('/bookings'),
         ),
         const SizedBox(height: 8),
         _ActivityItem(
           icon: Icons.cleaning_services_outlined,
           color: AppColors.cleaning,
           label: '$cleaning Rooms to Clean',
-          onTap: () => context.go('/housekeeping'),
+          onTap: () => context.go('/rooms'),
         ),
       ],
     );
@@ -548,20 +585,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 if (pendingPayments > 0)
                   _AlertItem(
                     message: '$pendingPayments pending payment(s) require follow-up',
-                    onTap: () => context.go('/payments'),
+                    onTap: () => context.go('/bookings'),
                   ),
                 if (cleaningRooms > 0) ...[
                   const Divider(height: 1),
                   _AlertItem(
-                    message: '$cleaningRooms room(s) waiting for housekeeping',
-                    onTap: () => context.go('/housekeeping'),
+                    message: '$cleaningRooms room(s) waiting for cleaning',
+                    onTap: () => context.go('/rooms'),
                   ),
                 ],
                 if (maintenanceRooms > 0) ...[
                   const Divider(height: 1),
                   _AlertItem(
-                    message: '$maintenanceRooms room(s) currently in maintenance',
-                    onTap: () => context.go('/maintenance'),
+                    message: '$maintenanceRooms room(s) under maintenance',
+                    onTap: () => context.go('/rooms'),
                     isLast: true,
                   ),
                 ],
@@ -588,40 +625,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
           childAspectRatio: 1.1,
           children: [
             _QuickActionButton(
-              icon: Icons.add_circle_outline,
-              label: 'New Booking',
-              color: AppColors.primary,
-              onTap: () => context.go('/bookings/new'),
+              icon: Icons.login_rounded,
+              label: 'New Check-In',
+              color: AppColors.available,
+              onTap: () => context.go('/bookings/new?checkInNow=true'),
             ),
             _QuickActionButton(
-              icon: Icons.login,
-              label: 'Check-in',
-              color: AppColors.success,
-              onTap: () => context.go('/check-in'),
-            ),
-            _QuickActionButton(
-              icon: Icons.logout,
-              label: 'Check-out',
+              icon: Icons.logout_rounded,
+              label: 'Check-Out & Bill',
               color: AppColors.warning,
               onTap: () => context.go('/check-out'),
             ),
             _QuickActionButton(
-              icon: Icons.inventory_2_outlined,
-              label: 'Inventory',
-              color: AppColors.reserved,
-              onTap: () => context.go('/inventory'),
-            ),
-            _QuickActionButton(
-              icon: Icons.receipt_outlined,
-              label: 'Add Expense',
-              color: AppColors.reserved,
-              onTap: () => context.go('/expenses'),
+              icon: Icons.calendar_month_outlined,
+              label: 'Bookings',
+              color: AppColors.primary,
+              onTap: () => context.go('/bookings'),
             ),
             _QuickActionButton(
               icon: Icons.restaurant_outlined,
               label: 'Restaurant',
               color: AppColors.cleaning,
               onTap: () => context.go('/restaurant'),
+            ),
+            _QuickActionButton(
+              icon: Icons.receipt_long_outlined,
+              label: 'Expenses',
+              color: AppColors.warning,
+              onTap: () => context.go('/expenses'),
+            ),
+            _QuickActionButton(
+              icon: Icons.inventory_2_outlined,
+              label: 'Inventory',
+              color: AppColors.reserved,
+              onTap: () => context.go('/inventory'),
             ),
           ],
         ),

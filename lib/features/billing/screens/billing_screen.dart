@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../../../core/constants/app_constants.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
-import '../../../core/utils/web_printer.dart';
 import '../../../core/utils/whatsapp_helper.dart';
 import '../../../models/booking.dart';
 import '../../../models/payment.dart';
@@ -23,10 +23,10 @@ class _BillingScreenState extends State<BillingScreen> {
   Booking? _booking;
   bool _isLoading = true;
   late final TextEditingController _phoneController;
-  String _hotelName = WebPrinter.hotelName;
-  String _hotelAddress = WebPrinter.hotelAddress;
-  String _hotelPhone = WebPrinter.hotelPhone;
-  String _hotelEmail = WebPrinter.hotelEmail;
+  String _hotelName = AppConstants.hotelName;
+  String _hotelAddress = AppConstants.hotelAddress;
+  String _hotelPhone = AppConstants.hotelPhone;
+  String _hotelEmail = AppConstants.hotelEmail;
 
   // Bill items - purely Room charge as set by Admin (pricePerNight * nights)
   List<BillItem> get _items {
@@ -87,7 +87,6 @@ class _BillingScreenState extends State<BillingScreen> {
       _booking?.paymentStatus == PaymentStatus.paid;
 
   double get _paid => _isSettled ? _grandTotal : (_booking?.paidAmount ?? 0.0);
-  double get _advance => (_booking?.paidAmount ?? 0.0) < _grandTotal ? (_booking?.paidAmount ?? 0.0) : 0.0;
   double get _pending => _isSettled ? 0.0 : (_grandTotal - _paid).clamp(0.0, double.infinity);
 
   Future<void> _markPaid() async {
@@ -105,43 +104,7 @@ class _BillingScreenState extends State<BillingScreen> {
     _load();
   }
 
-  void _triggerPrintInvoice() {
-    if (_booking == null) return;
-    final b = _booking!;
-    final currentPhone = _phoneController.text.trim().isNotEmpty
-        ? _phoneController.text.trim()
-        : b.guestPhone;
-    WebPrinter.printInvoice(
-      invoiceNumber: 'INV-${b.id.substring(0, b.id.length > 6 ? 6 : b.id.length).toUpperCase()}',
-      guestName: b.guestName,
-      guestPhone: currentPhone,
-      roomNumber: b.roomNumber,
-      roomType: b.roomType,
-      checkIn: AppFormatters.formatDate(b.checkIn),
-      checkOut: AppFormatters.formatDate(b.checkOut),
-      nights: b.nights > 0 ? b.nights : 1,
-      roomCharge: _subtotal,
-      totalAmount: _grandTotal,
-      paidAmount: _paid,
-      advanceAmount: _advance,
-      hotelName: _hotelName,
-      hotelAddress: _hotelAddress,
-      hotelPhone: _hotelPhone,
-      hotelEmail: _hotelEmail,
-    );
-  }
 
-  void _triggerDownloadPdf() {
-    _triggerPrintInvoice();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('📄 Generating invoice. In the print dialog, select "Save as PDF" to download.'),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-        duration: Duration(seconds: 4),
-      ),
-    );
-  }
 
   void _sendWhatsApp() {
     if (_booking == null) return;
@@ -294,7 +257,7 @@ class _BillingScreenState extends State<BillingScreen> {
                         },
                         icon: const Icon(Icons.chat, size: 18),
                         label: const Text(
-                          'Send WhatsApp (व्हाट्सएप भेजें)',
+                          'Send WhatsApp (व्हाट्सएप)',
                           style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                         ),
                         style: ElevatedButton.styleFrom(
@@ -305,39 +268,13 @@ class _BillingScreenState extends State<BillingScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              Navigator.pop(ctx);
-                              _triggerDownloadPdf();
-                            },
-                            icon: const Icon(Icons.download, size: 16),
-                            label: const Text('Download PDF'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: AppColors.primary,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              Navigator.pop(ctx);
-                              _triggerPrintInvoice();
-                            },
-                            icon: const Icon(Icons.print, size: 16),
-                            label: const Text('Print Bill'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
-                          ),
-                        ),
-                      ],
+                    SizedBox(
+                      width: double.infinity,
+                      height: 40,
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        child: const Text('बंद करें (Close)', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                      ),
                     ),
                   ],
                 ),
@@ -434,14 +371,17 @@ class _BillingScreenState extends State<BillingScreen> {
                         children: [
                           Row(
                             children: [
-                              Text(
-                                _isSettled ? 'BILL SETTLED' : 'PAYMENT DUE',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w800,
-                                  color: _isSettled ? AppColors.success : AppColors.warning,
-                                  fontFamily: 'Inter',
-                                  letterSpacing: 0.5,
+                              Flexible(
+                                child: Text(
+                                  _isSettled ? 'BILL SETTLED' : 'PAYMENT DUE',
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w800,
+                                    color: _isSettled ? AppColors.success : AppColors.warning,
+                                    fontFamily: 'Inter',
+                                    letterSpacing: 0.5,
+                                  ),
                                 ),
                               ),
                               const SizedBox(width: 8),
@@ -626,54 +566,7 @@ class _BillingScreenState extends State<BillingScreen> {
               ),
               const SizedBox(height: 20),
 
-              // ── Action Buttons: [ Download PDF ] [ Print Bill ] [ Send WhatsApp ] ──
-              Row(
-                children: [
-                  // [ Download PDF ]
-                  Expanded(
-                    child: SizedBox(
-                      height: 50,
-                      child: OutlinedButton.icon(
-                        onPressed: _triggerDownloadPdf,
-                        icon: const Icon(Icons.download_rounded, size: 20),
-                        label: const Text(
-                          'Download PDF',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-                        ),
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: AppColors.primary,
-                          side: const BorderSide(color: AppColors.primary, width: 1.5),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  // [ Print Bill ]
-                  Expanded(
-                    child: SizedBox(
-                      height: 50,
-                      child: ElevatedButton.icon(
-                        onPressed: _triggerPrintInvoice,
-                        icon: const Icon(Icons.print_rounded, size: 20),
-                        label: const Text(
-                          'Print Bill',
-                          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          elevation: 1,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-
-              // [ Send WhatsApp ]
+              // ── Action Button: [ Send WhatsApp ] ──
               SizedBox(
                 width: double.infinity,
                 height: 54,

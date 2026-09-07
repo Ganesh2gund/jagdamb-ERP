@@ -94,43 +94,91 @@ class _ReportCycleScreenState extends State<ReportCycleScreen> {
   }
 
   Future<void> _handleInstantDelete() async {
-    final confirm = await showDialog<bool>(
+    final confirm = await showModalBottomSheet<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 28),
-            SizedBox(width: 8),
-            Text('Confirm Data Clean'),
-          ],
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        content: const Column(
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
+        child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Kya aap abhi billing data delete karke naya cycle start karna chahte hain?',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            Center(
+              child: Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(color: AppColors.grey300, borderRadius: BorderRadius.circular(2)),
+              ),
             ),
-            SizedBox(height: 12),
-            Text(
-              '• Delete hoga: Sare Bookings, Restaurant Bills & Expenses\n'
-              '• Safe rahega: Rooms, Menu dishes, Tables & Hotel Settings (Ye kabhi delete nahi honge)',
-              style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
+            const SizedBox(height: 20),
+            Container(
+              width: 56,
+              height: 56,
+              decoration: const BoxDecoration(color: AppColors.errorLight, shape: BoxShape.circle),
+              child: const Icon(Icons.delete_sweep_rounded, color: AppColors.error, size: 30),
+            ),
+            const SizedBox(height: 14),
+            const Text(
+              'बिलिंग डेटा रीसेट करें (Confirm Data Clean)',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, fontFamily: 'Inter'),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 10),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.grey50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('• Delete hoga: Sare Bookings, Restaurant Bills & Expenses', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.error)),
+                  SizedBox(height: 4),
+                  Text('• Safe rahega: Rooms, Menu dishes, Tables & Hotel Settings (Ye kabhi delete nahi honge)', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 48,
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(ctx).pop(false),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: AppColors.border),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('रद्द करें (Cancel)', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: SizedBox(
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(ctx).pop(true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.error,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
+                      child: const Text('अभी डिलीट करें', style: TextStyle(fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Delete Now', style: TextStyle(color: Colors.white)),
-          ),
-        ],
       ),
     );
 
@@ -279,32 +327,33 @@ class _ReportCycleScreenState extends State<ReportCycleScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withOpacity(0.12),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                'Cycle #$cycleNum',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: AppColors.primary,
-                                  fontSize: 13,
-                                ),
-                              ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.12),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'Cycle #$cycleNum',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.primary,
+                              fontSize: 12,
                             ),
-                            const SizedBox(width: 8),
-                            Text(
-                              '$startDate – $endDate',
-                              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                            ),
-                          ],
+                          ),
                         ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            '$startDate – $endDate',
+                            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
@@ -312,7 +361,7 @@ class _ReportCycleScreenState extends State<ReportCycleScreen> {
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Text(
-                            isReady ? '10 Days Done' : '$daysRemaining days left',
+                            isReady ? 'Ready' : '$daysRemaining d left',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
@@ -428,7 +477,7 @@ class _ReportCycleScreenState extends State<ReportCycleScreen> {
                 onPressed: _handleInstantDelete,
                 icon: const Icon(Icons.delete_sweep_outlined),
                 label: const Text(
-                  'Delete Data Now (Instant Clean & Start New Cycle)',
+                  'Delete Data Now (Instant Clean)',
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),

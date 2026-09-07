@@ -255,6 +255,7 @@ class _EditBookingScreenState extends State<EditBookingScreen> {
 
                     // Room Dropdown
                     DropdownButtonFormField<Room>(
+                      isExpanded: true,
                       value: _selectedRoom,
                       decoration: const InputDecoration(
                         labelText: 'Select Room *',
@@ -263,7 +264,11 @@ class _EditBookingScreenState extends State<EditBookingScreen> {
                       items: _rooms.map((r) {
                         return DropdownMenuItem<Room>(
                           value: r,
-                          child: Text('Room ${r.number} - ${r.type.label} (${AppFormatters.formatCurrency(r.pricePerNight)}/nt)'),
+                          child: Text(
+                            'Room ${r.number} - ${r.type.label} (${AppFormatters.formatCurrency(r.pricePerNight)}/nt)',
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
                         );
                       }).toList(),
                       onChanged: (val) {

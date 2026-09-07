@@ -273,8 +273,8 @@ class InfoRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(
-            width: 120,
+          Expanded(
+            flex: 5,
             child: Text(
               label,
               style: const TextStyle(
@@ -284,9 +284,12 @@ class InfoRow extends StatelessWidget {
               ),
             ),
           ),
+          const SizedBox(width: 8),
           Expanded(
+            flex: 5,
             child: Text(
               value,
+              textAlign: TextAlign.right,
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,

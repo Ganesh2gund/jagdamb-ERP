@@ -9,10 +9,16 @@ import '../../../models/room.dart';
 import '../../../models/guest.dart';
 import '../../../repositories/booking_repository.dart';
 import '../../../repositories/room_repository.dart';
-import '../../../repositories/guest_repository.dart';
 
 class NewBookingScreen extends StatefulWidget {
-  const NewBookingScreen({super.key});
+  final String? preselectedRoomId;
+  final bool initialCheckInNow;
+
+  const NewBookingScreen({
+    super.key,
+    this.preselectedRoomId,
+    this.initialCheckInNow = true,
+  });
 
   @override
   State<NewBookingScreen> createState() => _NewBookingScreenState();
@@ -24,7 +30,6 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
   bool _dataLoading = true;
 
   List<Room> _availableRooms = [];
-  List<Guest> _guests = [];
 
   Guest? _selectedGuest;
   Room? _selectedRoom;
@@ -33,8 +38,8 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
   int _adults = 2;
   int _children = 0;
   BookingSource _source = BookingSource.direct;
-  PaymentStatus _paymentStatus = PaymentStatus.pending;
-  bool _checkInNow = false; // Auto check-in toggle
+  PaymentStatus _paymentStatus = PaymentStatus.paid;
+  bool _checkInNow = true; // Auto check-in default for front desk walk-ins
   final _specialRequestController = TextEditingController();
   final _guestNameController = TextEditingController();
   final _guestPhoneController = TextEditingController();
@@ -43,6 +48,7 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
   @override
   void initState() {
     super.initState();
+    _checkInNow = widget.initialCheckInNow;
     _loadData();
   }
 
@@ -57,12 +63,23 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
 
   Future<void> _loadData() async {
     final roomRepo = context.read<RoomRepository>();
-    final guestRepo = context.read<GuestRepository>();
-    final results = await Future.wait([roomRepo.getRooms(), guestRepo.getGuests()]);
+    final rooms = await roomRepo.getRooms();
     if (!mounted) return;
+    final available = rooms.where((r) => r.status == RoomStatus.available).toList();
+    Room? matchedRoom;
+    if (widget.preselectedRoomId != null) {
+      final matches = available.where((r) => r.id == widget.preselectedRoomId || r.number == widget.preselectedRoomId);
+      if (matches.isNotEmpty) {
+        matchedRoom = matches.first;
+      }
+    }
     setState(() {
-      _availableRooms = (results[0] as List<Room>).where((r) => r.status == RoomStatus.available).toList();
-      _guests = results[1] as List<Guest>;
+      _availableRooms = available;
+      _selectedRoom = matchedRoom;
+      if (matchedRoom != null) {
+        _advanceAmountController.text = matchedRoom.pricePerNight.toStringAsFixed(0);
+        _paymentStatus = PaymentStatus.paid;
+      }
       _dataLoading = false;
     });
   }
@@ -114,10 +131,6 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
     // If checkInNow, check-in date = today
     final effectiveCheckIn = _checkInNow ? DateTime.now() : _checkIn;
     final adv = _advanceAmount;
-    final effectivePaymentStatus = adv >= _totalAmount && _totalAmount > 0
-        ? PaymentStatus.paid
-        : (adv > 0 ? PaymentStatus.partial : PaymentStatus.pending);
-
     final booking = Booking(
       id: uuid.v4(),
       guestId: _selectedGuest?.id ?? uuid.v4(),
@@ -132,7 +145,7 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
       children: _children,
       source: _source,
       status: _checkInNow ? BookingStatus.checkedIn : BookingStatus.upcoming,
-      paymentStatus: effectivePaymentStatus,
+      paymentStatus: _paymentStatus,
       totalAmount: _totalAmount,
       paidAmount: adv,
       createdAt: DateTime.now(),
@@ -159,14 +172,18 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
       SnackBar(
         content: Text(
           _checkInNow
-              ? '✅ Booking created & Guest Checked-In — Room ${_selectedRoom!.number}'
+              ? '✅ Guest Checked-In to Room ${_selectedRoom!.number} — Room is now Occupied!'
               : 'Booking created successfully!',
         ),
         behavior: SnackBarBehavior.floating,
         backgroundColor: _checkInNow ? AppColors.available : null,
       ),
     );
-    context.go('/bookings');
+    if (_checkInNow) {
+      context.go('/rooms');
+    } else {
+      context.go('/bookings');
+    }
   }
 
   @override
@@ -177,16 +194,16 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
         if (didPop) return;
-        context.go('/bookings');
+        context.go('/rooms');
       },
       child: Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
-          title: const Text('New Booking'),
+          title: Text(_checkInNow ? 'Check-in Guest (नया चेक-इन)' : 'Advance Booking (एडवांस बुकिंग)'),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
             tooltip: 'वापस जाएं (Back)',
-            onPressed: () => context.go('/bookings'),
+            onPressed: () => context.go('/rooms'),
           ),
         ),
       body: Form(
@@ -194,18 +211,107 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            // ── Mode Switch: Walk-in Check-in vs Advance Reservation ──
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _checkInNow = true;
+                          _checkIn = DateTime.now();
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: _checkInNow ? AppColors.available : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        alignment: Alignment.center,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.login, size: 16, color: _checkInNow ? Colors.white : AppColors.textSecondary),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                'तुरंत चेक-इन (Walk-in)',
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: _checkInNow ? Colors.white : AppColors.textSecondary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _checkInNow = false;
+                        });
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        decoration: BoxDecoration(
+                          color: !_checkInNow ? AppColors.primary : Colors.transparent,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        alignment: Alignment.center,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.calendar_month, size: 16, color: !_checkInNow ? Colors.white : AppColors.textSecondary),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
+                                'एडवांस बुकिंग (Future)',
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: !_checkInNow ? Colors.white : AppColors.textSecondary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
             // Guest section
             _SectionCard(
               title: 'Guest Information',
               child: Column(
                 children: [
                   // Select existing guest
-                  DropdownButtonFormField<Guest>(
+                  DropdownButtonFormField<Guest?>(
+                    isExpanded: true,
                     decoration: const InputDecoration(labelText: 'Select Existing Guest (optional)'),
                     value: _selectedGuest,
-                    items: [
-                      const DropdownMenuItem(value: null, child: Text('New Guest')),
-                      ..._guests.map((g) => DropdownMenuItem(value: g, child: Text(g.name))),
+                    items: const [
+                      DropdownMenuItem<Guest?>(
+                        value: null,
+                        child: Text('New Guest (नया गेस्ट)', overflow: TextOverflow.ellipsis),
+                      ),
                     ],
                     onChanged: (g) => setState(() => _selectedGuest = g),
                   ),
@@ -232,14 +338,26 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
             // Room section
             _SectionCard(
               title: 'Room Selection',
-              child: DropdownButtonFormField<Room>(
+              child: DropdownButtonFormField<Room?>(
+                isExpanded: true,
                 decoration: const InputDecoration(labelText: 'Select Room *'),
                 value: _selectedRoom,
-                items: _availableRooms.map((r) => DropdownMenuItem(
+                items: _availableRooms.map((r) => DropdownMenuItem<Room?>(
                   value: r,
-                  child: Text('Room ${r.number} - ${r.type.label} (₹${r.pricePerNight.toStringAsFixed(0)}/night)'),
+                  child: Text(
+                    'Room ${r.number} - ${r.type.label} (₹${r.pricePerNight.toStringAsFixed(0)}/night)',
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
                 )).toList(),
-                onChanged: (r) => setState(() => _selectedRoom = r),
+                onChanged: (r) {
+                  setState(() {
+                    _selectedRoom = r;
+                    if (r != null) {
+                      _advanceAmountController.text = r.pricePerNight.toStringAsFixed(0);
+                    }
+                  });
+                },
                 validator: (v) => v == null ? 'Please select a room' : null,
               ),
             ),
@@ -302,9 +420,13 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
               child: Column(
                 children: [
                   DropdownButtonFormField<BookingSource>(
+                    isExpanded: true,
                     decoration: const InputDecoration(labelText: 'Booking Source'),
                     value: _source,
-                    items: BookingSource.values.map((s) => DropdownMenuItem(value: s, child: Text(s.label))).toList(),
+                    items: BookingSource.values.map((s) => DropdownMenuItem(
+                      value: s,
+                      child: Text(s.label, overflow: TextOverflow.ellipsis),
+                    )).toList(),
                     onChanged: (v) => setState(() => _source = v!),
                   ),
                   const SizedBox(height: 12),
@@ -318,17 +440,156 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
             ),
             const SizedBox(height: 16),
 
-            // ── Advance Payment Section ─────────────────────
+            // ── Payment Section ─────────────────────
             _SectionCard(
-              title: '💰 अग्रिम भुगतान (Advance Payment)',
+              title: '💰 भुगतान का तरीका (Payment Option)',
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  const Text(
+                    'पेमेंट कब मिलेगा? (Select Payment Timing):',
+                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, fontFamily: 'Inter'),
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      // Option 1: Full Payment
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _advanceAmountController.text = _totalAmount.toStringAsFixed(0);
+                              _paymentStatus = PaymentStatus.paid;
+                            });
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                            decoration: BoxDecoration(
+                              color: (_advanceAmount >= _totalAmount && _totalAmount > 0)
+                                  ? AppColors.success.withAlpha(30)
+                                  : AppColors.background,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: (_advanceAmount >= _totalAmount && _totalAmount > 0)
+                                    ? AppColors.success
+                                    : AppColors.border,
+                                width: (_advanceAmount >= _totalAmount && _totalAmount > 0) ? 2 : 1,
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                Icon(
+                                  Icons.check_circle,
+                                  color: (_advanceAmount >= _totalAmount && _totalAmount > 0)
+                                      ? AppColors.success
+                                      : AppColors.textSecondary,
+                                  size: 20,
+                                ),
+                                const SizedBox(height: 6),
+                                const Text(
+                                  'पूरा पेमेंट मिला\n(Full Paid)',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, fontFamily: 'Inter'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Option 2: Partial
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              final half = (_totalAmount * 0.5).round();
+                              _advanceAmountController.text = '$half';
+                              _paymentStatus = PaymentStatus.partial;
+                            });
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                            decoration: BoxDecoration(
+                              color: (_advanceAmount > 0 && _advanceAmount < _totalAmount)
+                                  ? AppColors.warning.withAlpha(30)
+                                  : AppColors.background,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: (_advanceAmount > 0 && _advanceAmount < _totalAmount)
+                                    ? AppColors.warning
+                                    : AppColors.border,
+                                width: (_advanceAmount > 0 && _advanceAmount < _totalAmount) ? 2 : 1,
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                Icon(
+                                  Icons.pie_chart_outline,
+                                  color: (_advanceAmount > 0 && _advanceAmount < _totalAmount)
+                                      ? AppColors.warning
+                                      : AppColors.textSecondary,
+                                  size: 20,
+                                ),
+                                const SizedBox(height: 6),
+                                const Text(
+                                  'कुछ एडवांस\n(Partial)',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, fontFamily: 'Inter'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Option 3: Pay at Check-out
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _advanceAmountController.text = '0';
+                              _paymentStatus = PaymentStatus.pending;
+                            });
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                            decoration: BoxDecoration(
+                              color: (_advanceAmount == 0)
+                                  ? AppColors.error.withAlpha(30)
+                                  : AppColors.background,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: (_advanceAmount == 0) ? AppColors.error : AppColors.border,
+                                width: (_advanceAmount == 0) ? 2 : 1,
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                Icon(
+                                  Icons.schedule,
+                                  color: (_advanceAmount == 0) ? AppColors.error : AppColors.textSecondary,
+                                  size: 20,
+                                ),
+                                const SizedBox(height: 6),
+                                const Text(
+                                  'चेकआउट पर देंगे\n(At Checkout)',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, fontFamily: 'Inter'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
                   TextFormField(
                     controller: _advanceAmountController,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
-                      labelText: 'अग्रिम राशि (Advance Amount Received)',
+                      labelText: 'अभी जमा हुई राशि (Amount Received Now)',
                       prefixText: '₹ ',
                       hintText: '0',
                     ),
@@ -345,40 +606,8 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
                       });
                     },
                   ),
-                  const SizedBox(height: 10),
-                  // Quick shortcut buttons
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 6,
-                    children: [
-                      ActionChip(
-                        avatar: const Icon(Icons.money_off, size: 16),
-                        label: const Text('₹0 (बिना एडवांस)'),
-                        onPressed: () {
-                          _advanceAmountController.text = '0';
-                          setState(() => _paymentStatus = PaymentStatus.pending);
-                        },
-                      ),
-                      ActionChip(
-                        avatar: const Icon(Icons.pie_chart_outline, size: 16),
-                        label: const Text('50% एडवांस'),
-                        onPressed: () {
-                          final half = (_totalAmount * 0.5).round();
-                          _advanceAmountController.text = '$half';
-                          setState(() => _paymentStatus = PaymentStatus.partial);
-                        },
-                      ),
-                      ActionChip(
-                        avatar: const Icon(Icons.check_circle_outline, size: 16, color: AppColors.success),
-                        label: const Text('पूरा पेमेंट (100% Full)'),
-                        onPressed: () {
-                          _advanceAmountController.text = '${_totalAmount.round()}';
-                          setState(() => _paymentStatus = PaymentStatus.paid);
-                        },
-                      ),
-                    ],
-                  ),
                   const SizedBox(height: 12),
+
                   // Live breakdown
                   Container(
                     padding: const EdgeInsets.all(12),
@@ -400,7 +629,7 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('अग्रिम जमा (Advance Paid):', style: TextStyle(fontSize: 13, color: AppColors.success, fontWeight: FontWeight.w600, fontFamily: 'Inter')),
+                            const Text('अभी जमा (Advance Paid):', style: TextStyle(fontSize: 13, color: AppColors.success, fontWeight: FontWeight.w600, fontFamily: 'Inter')),
                             Text(AppFormatters.formatCurrency(_advanceAmount), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.success, fontFamily: 'Inter')),
                           ],
                         ),
@@ -426,83 +655,35 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
                 ],
               ),
             ),
-            const SizedBox(height: 16),
-
-            // ── Check-in Now Toggle ─────────────────────────
-            Container(
-              decoration: BoxDecoration(
-                gradient: _checkInNow
-                    ? LinearGradient(
-                        colors: [AppColors.available.withAlpha(25), AppColors.available.withAlpha(10)],
-                      )
-                    : null,
-                color: _checkInNow ? null : AppColors.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: _checkInNow ? AppColors.available : AppColors.border,
-                  width: _checkInNow ? 1.5 : 1,
-                ),
-              ),
-              child: SwitchListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                title: const Text(
-                  'Check-in Now',
-                  style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, fontFamily: 'Inter'),
-                ),
-                subtitle: Text(
-                  _checkInNow
-                      ? 'Guest will be checked in immediately. Room → Occupied.'
-                      : 'Toggle to check-in the guest right now (walk-in)',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontFamily: 'Inter',
-                    color: _checkInNow ? AppColors.available : AppColors.textSecondary,
-                  ),
-                ),
-                secondary: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: _checkInNow ? AppColors.available.withAlpha(30) : AppColors.grey100,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Icon(
-                    _checkInNow ? Icons.login_rounded : Icons.login_outlined,
-                    color: _checkInNow ? AppColors.available : AppColors.textSecondary,
-                    size: 22,
-                  ),
-                ),
-                value: _checkInNow,
-                activeColor: AppColors.available,
-                onChanged: (v) => setState(() => _checkInNow = v),
-              ),
-            ),
             const SizedBox(height: 24),
 
+            // ── Primary Action Button ───────────────────────
             SizedBox(
               width: double.infinity,
               height: 52,
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _submit,
-                style: _checkInNow
-                    ? ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.available,
-                        foregroundColor: Colors.white,
-                      )
-                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _checkInNow ? AppColors.available : AppColors.primary,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  elevation: 2,
+                ),
                 child: _isLoading
                     ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                     : Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(
-                            _checkInNow ? Icons.login_rounded : Icons.check_circle_outline,
-                            size: 18,
+                            _checkInNow ? Icons.login_rounded : Icons.calendar_month,
+                            size: 20,
                           ),
                           const SizedBox(width: 8),
                           Text(
-                            _checkInNow ? 'Create Booking & Check-In' : 'Create Booking',
-                            style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
+                            _checkInNow
+                                ? '🟢 Check-In Guest (गेस्ट को चेक-इन करें)'
+                                : '📅 Save Booking (एडवांस बुकिंग सेव करें)',
+                            style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
                           ),
                         ],
                       ),

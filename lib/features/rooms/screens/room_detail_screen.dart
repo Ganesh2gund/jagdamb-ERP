@@ -57,19 +57,80 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
 
   Future<void> _deleteRoom() async {
     if (_room == null) return;
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showModalBottomSheet<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Delete Room?', style: TextStyle(fontWeight: FontWeight.w700, fontFamily: 'Inter')),
-        content: Text('Are you sure you want to delete Room ${_room!.number}? This action cannot be undone.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: Colors.white),
-            child: const Text('Delete'),
-          ),
-        ],
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(
+              child: Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(color: AppColors.grey300, borderRadius: BorderRadius.circular(2)),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Container(
+              width: 56,
+              height: 56,
+              decoration: const BoxDecoration(color: AppColors.errorLight, shape: BoxShape.circle),
+              child: const Icon(Icons.delete_forever_rounded, color: AppColors.error, size: 30),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              'Room ${_room!.number} हटाएं?',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, fontFamily: 'Inter'),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'क्या आप सचमुच Room ${_room!.number} को हटाना चाहते हैं? यह एक्शन वापस नहीं हो सकता।',
+              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 22),
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 48,
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: AppColors.border),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('रद्द करें (Cancel)', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: SizedBox(
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.error,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
+                      child: const Text('कमरा हटाएं (Delete)', style: TextStyle(fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
     if (confirmed != true || !mounted) return;
@@ -240,31 +301,23 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
             const SizedBox(height: 24),
             // Actions
             const Text('Actions', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, fontFamily: 'Inter')),
-            const SizedBox(height: 12),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _changeStatus,
-                icon: const Icon(Icons.edit_outlined, size: 18),
-                label: const Text('Change Room Status'),
-              ),
-            ),
-            const SizedBox(height: 10),
-            if (room.status == RoomStatus.occupied && room.currentBookingId != null) ...[
+            // Context-Aware Actions based on Room Status
+            if (room.status == RoomStatus.available) ...[
               SizedBox(
                 width: double.infinity,
-                height: 50,
+                height: 52,
                 child: ElevatedButton.icon(
-                  onPressed: () => context.go('/check-out?bookingId=${room.currentBookingId}'),
-                  icon: const Icon(Icons.logout, size: 20),
-                  label: const Text(
-                    '🚪 Check-out Room & Settle Bill (कमरा खाली करें और बिल)',
-                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
-                  ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.warning,
+                    backgroundColor: AppColors.available,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: 2,
+                  ),
+                  onPressed: () => context.go('/bookings/new?roomId=${room.id}&checkInNow=true'),
+                  icon: const Icon(Icons.login_rounded, size: 22),
+                  label: const Text(
+                    '🟢 Check-in Guest (इस कमरे में चेक-इन करें)',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
                   ),
                 ),
               ),
@@ -272,21 +325,97 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
               SizedBox(
                 width: double.infinity,
                 child: OutlinedButton.icon(
-                  onPressed: () => context.go('/bookings/${room.currentBookingId}'),
-                  icon: const Icon(Icons.book_outlined, size: 18),
-                  label: const Text('View Current Booking (बुकिंग विवरण)'),
+                  onPressed: _changeStatus,
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  label: const Text('कमरे की स्थिति बदलें (Change Status)'),
+                ),
+              ),
+            ] else if (room.status == RoomStatus.occupied) ...[
+              SizedBox(
+                width: double.infinity,
+                height: 52,
+                child: ElevatedButton.icon(
+                  onPressed: () => context.go('/check-out?bookingId=${room.currentBookingId ?? ''}'),
+                  icon: const Icon(Icons.logout, size: 22),
+                  label: const Text(
+                    '🚪 Check-out & Settle Bill (कमरा खाली करें और बिल)',
+                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.warning,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    elevation: 2,
+                  ),
+                ),
+              ),
+              if (room.currentBookingId != null) ...[
+                const SizedBox(height: 10),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => context.go('/bookings/${room.currentBookingId}'),
+                    icon: const Icon(Icons.receipt_long, size: 18),
+                    label: const Text('📄 View Booking & Bill (बुकिंग व बिल देखें)'),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: TextButton.icon(
+                  onPressed: _changeStatus,
+                  icon: const Icon(Icons.edit_outlined, size: 16),
+                  label: const Text('Change Room Status Manually'),
+                ),
+              ),
+            ] else if (room.status == RoomStatus.cleaning) ...[
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.available,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                  onPressed: () async {
+                    final repo = context.read<RoomRepository>();
+                    await repo.updateRoomStatus(widget.roomId, RoomStatus.available);
+                    if (!mounted) return;
+                    await _loadRoom();
+                    if (!mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Room is clean and now Available!'),
+                        backgroundColor: AppColors.available,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.check_circle_outline, size: 20),
+                  label: const Text('✨ Mark Clean & Ready (कमरा तैयार है)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                 ),
               ),
               const SizedBox(height: 10),
-            ],
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => context.go('/maintenance'),
-                icon: const Icon(Icons.build_outlined, size: 18),
-                label: const Text('Add Maintenance Request'),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton.icon(
+                  onPressed: _changeStatus,
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  label: const Text('Change Status'),
+                ),
               ),
-            ),
+            ] else ...[
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _changeStatus,
+                  icon: const Icon(Icons.edit_outlined, size: 18),
+                  label: const Text('Change Room Status'),
+                ),
+              ),
+            ],
           ],
         ),
       ),

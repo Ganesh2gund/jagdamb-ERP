@@ -87,15 +87,70 @@ class _CheckInScreenState extends State<CheckInScreen> {
 
   Widget _buildSelectBooking() {
     if (_upcomingBookings.isEmpty) {
-      return const EmptyState(icon: Icons.login, title: 'No upcoming check-ins', subtitle: 'All bookings are up to date');
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(color: AppColors.available.withOpacity(0.12), shape: BoxShape.circle),
+                child: const Icon(Icons.login, color: AppColors.available, size: 36),
+              ),
+              const SizedBox(height: 16),
+              const Text('कोई पेंडिंग एडवांस चेक-इन नहीं है', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, fontFamily: 'Inter')),
+              const SizedBox(height: 8),
+              const Text(
+                'अगर नया गेस्ट अभी आया है, तो नीचे बटन से तुरंत कमरा दें:',
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 13, color: AppColors.textSecondary, fontFamily: 'Inter'),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.available,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    elevation: 2,
+                  ),
+                  onPressed: () => context.go('/bookings/new?checkInNow=true'),
+                  icon: const Icon(Icons.add_circle_outline),
+                  label: const Text('➕ नया तुरंत चेक-इन (Walk-in Check-in)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
           color: AppColors.surface,
-          padding: const EdgeInsets.all(16),
-          child: const Text('Select a booking to check in:', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, fontFamily: 'Inter')),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text('एडवांस बुकिंग्स:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, fontFamily: 'Inter')),
+              ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.available,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                ),
+                onPressed: () => context.go('/bookings/new?checkInNow=true'),
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text('नया Walk-in', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+              ),
+            ],
+          ),
         ),
         Expanded(
           child: ListView.separated(

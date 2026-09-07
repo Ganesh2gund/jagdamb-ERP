@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../core/utils/web_printer.dart';
-import '../../../core/utils/whatsapp_helper.dart';
 import '../../../models/restaurant.dart';
 import '../../../repositories/restaurant_repository.dart';
 import '../../../widgets/common_widgets.dart';
@@ -118,101 +117,210 @@ class _RestaurantScreenState extends State<RestaurantScreen>
     final capCtrl = TextEditingController(text: existing != null ? existing.capacity.toString() : '4');
     final formKey = GlobalKey<FormState>();
 
-    await showDialog(
+    await showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(
-          isEdit ? 'टेबल एडिट करें (Edit Table)' : 'नई टेबल जोड़ें (Add Table)',
-          style: const TextStyle(fontWeight: FontWeight.w700, fontFamily: 'Inter'),
-        ),
-        content: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextFormField(
-                controller: numCtrl,
-                decoration: const InputDecoration(
-                  labelText: 'Table Number (टेबल नंबर)',
-                  hintText: 'e.g. 1, 2, T-5',
-                  prefixIcon: Icon(Icons.table_restaurant),
-                ),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter table number' : null,
-              ),
-              const SizedBox(height: 14),
-              TextFormField(
-                controller: capCtrl,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Seating Capacity (सीटें)',
-                  hintText: 'e.g. 2, 4, 6',
-                  prefixIcon: Icon(Icons.event_seat),
-                ),
-                validator: (v) {
-                  if (v == null || v.trim().isEmpty) return 'Enter capacity';
-                  final n = int.tryParse(v);
-                  if (n == null || n <= 0) return 'Enter a valid number';
-                  return null;
-                },
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('रद्द करें (Cancel)'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (!formKey.currentState!.validate()) return;
-              final number = numCtrl.text.trim();
-              final cap = int.parse(capCtrl.text.trim());
-              Navigator.pop(ctx);
-
-              final repo = context.read<RestaurantRepository>();
-              if (isEdit) {
-                await repo.updateTable(existing.id, number, cap);
-              } else {
-                await repo.addTable(number, cap);
-              }
-              await _loadData();
-              if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(isEdit ? '✅ Table $number updated' : '✅ Table $number added'),
-                  behavior: SnackBarBehavior.floating,
-                ),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: Colors.white,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx2, setModal) {
+          final currentCap = int.tryParse(capCtrl.text) ?? 4;
+          return Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
             ),
-            child: Text(isEdit ? 'अपडेट करें (Save)' : 'जोड़ें (Add Table)'),
-          ),
-        ],
+            padding: EdgeInsets.fromLTRB(
+              20, 12, 20,
+              MediaQuery.of(ctx2).viewInsets.bottom + 20,
+            ),
+            child: SingleChildScrollView(
+              child: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Top drag pill
+                    Center(
+                      child: Container(
+                        width: 44,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: AppColors.grey300,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Header
+                    Row(
+                      children: [
+                        Container(
+                          width: 42,
+                          height: 42,
+                          decoration: BoxDecoration(
+                            color: AppColors.primarySurface,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(Icons.table_restaurant, color: AppColors.primary, size: 22),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                isEdit ? 'टेबल एडिट करें (Edit Table)' : 'नई टेबल जोड़ें (Add Table)',
+                                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, fontFamily: 'Inter'),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                isEdit ? 'टेबल नंबर और बैठने की क्षमता बदलें' : 'रेस्टोरेंट में नई डाइनिंग टेबल दर्ज करें',
+                                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                              ),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                          onPressed: () => Navigator.pop(ctx),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    const Divider(height: 1),
+                    const SizedBox(height: 16),
+
+                    // Table Number Input
+                    const Text('टेबल नंबर (Table Number)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: numCtrl,
+                      autofocus: !isEdit,
+                      decoration: InputDecoration(
+                        hintText: 'उदा. 1, 2, 10, T-5',
+                        prefixIcon: const Icon(Icons.pin, color: AppColors.primary),
+                        filled: true,
+                        fillColor: AppColors.grey50,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+                      ),
+                      validator: (v) => (v == null || v.trim().isEmpty) ? 'टेबल नंबर दर्ज करें' : null,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Seating Capacity Input
+                    const Text('बैठने की क्षमता (Seating Capacity)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                    const SizedBox(height: 8),
+                    TextFormField(
+                      controller: capCtrl,
+                      keyboardType: TextInputType.number,
+                      onChanged: (_) => setModal(() {}),
+                      decoration: InputDecoration(
+                        hintText: 'उदा. 2, 4, 6, 8',
+                        prefixIcon: const Icon(Icons.event_seat, color: AppColors.primary),
+                        suffixText: 'सीटें (Seats)',
+                        filled: true,
+                        fillColor: AppColors.grey50,
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+                      ),
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) return 'क्षमता दर्ज करें';
+                        final n = int.tryParse(v);
+                        if (n == null || n <= 0) return 'वैध संख्या दर्ज करें';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Quick capacity selector chips
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [2, 4, 6, 8, 10].map((capVal) {
+                          final isSel = currentCap == capVal;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: ChoiceChip(
+                              label: Text('$capVal सीटें'),
+                              selected: isSel,
+                              selectedColor: AppColors.primary,
+                              labelStyle: TextStyle(
+                                color: isSel ? Colors.white : AppColors.textPrimary,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 12,
+                              ),
+                              backgroundColor: AppColors.grey100,
+                              onSelected: (_) {
+                                capCtrl.text = capVal.toString();
+                                setModal(() {});
+                              },
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                    const SizedBox(height: 22),
+
+                    // Submit Button
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton.icon(
+                        onPressed: () async {
+                          if (!formKey.currentState!.validate()) return;
+                          final number = numCtrl.text.trim();
+                          final cap = int.parse(capCtrl.text.trim());
+                          Navigator.pop(ctx);
+
+                          final repo = context.read<RestaurantRepository>();
+                          if (isEdit) {
+                            await repo.updateTable(existing.id, number, cap);
+                          } else {
+                            await repo.addTable(number, cap);
+                          }
+                          await _loadData();
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(isEdit ? '✅ Table $number अपडेट हो गई!' : '✅ Table $number सफलतापूर्वक जुड़ गई!'),
+                              behavior: SnackBarBehavior.floating,
+                              backgroundColor: AppColors.success,
+                            ),
+                          );
+                        },
+                        icon: Icon(isEdit ? Icons.check_circle_outline : Icons.add, size: 20),
+                        label: Text(
+                          isEdit ? 'अपडेट करें (Save Changes)' : 'टेबल सुरक्षित करें (Save Table)',
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          elevation: 1,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
       ),
     );
   }
 
   Future<void> _deleteTable(RestaurantTable t) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Delete Table ${t.number}?'),
-        content: Text('Are you sure you want to remove Table ${t.number}?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: Colors.white),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+    final ok = await _showConfirmDeleteSheet(
+      title: 'Table ${t.number} हटाएं?',
+      message: 'क्या आप सचमुच Table ${t.number} को हटाना चाहते हैं?',
+      confirmText: 'हाँ, हटाएं (Delete)',
     );
 
     if (ok == true) {
@@ -221,7 +329,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
       await _loadData();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('🗑️ Table ${t.number} deleted'), behavior: SnackBarBehavior.floating),
+        SnackBar(content: Text('🗑️ Table ${t.number} हटा दी गई'), behavior: SnackBarBehavior.floating),
       );
     }
   }
@@ -233,66 +341,137 @@ class _RestaurantScreenState extends State<RestaurantScreen>
     final catCtrl = TextEditingController();
     final formKey = GlobalKey<FormState>();
 
-    await showDialog(
+    await showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('नई कैटेगरी जोड़ें (Add Category)', style: TextStyle(fontWeight: FontWeight.w700)),
-        content: Form(
-          key: formKey,
-          child: TextFormField(
-            controller: catCtrl,
-            autofocus: true,
-            decoration: const InputDecoration(
-              labelText: 'Category Name (कैटेगरी नाम)',
-              hintText: 'e.g. Chinese, Thali, Snacks',
-              prefixIcon: Icon(Icons.category),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx2, setModal) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: EdgeInsets.fromLTRB(
+            20, 12, 20,
+            MediaQuery.of(ctx2).viewInsets.bottom + 20,
+          ),
+          child: SingleChildScrollView(
+            child: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 44,
+                      height: 4,
+                      decoration: BoxDecoration(color: AppColors.grey300, borderRadius: BorderRadius.circular(2)),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(color: AppColors.primarySurface, borderRadius: BorderRadius.circular(12)),
+                        child: const Icon(Icons.category_rounded, color: AppColors.primary, size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('नई कैटेगरी जोड़ें (Add Category)', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, fontFamily: 'Inter')),
+                            SizedBox(height: 2),
+                            Text('व्यंजनों का वर्गीकरण (जैसे Thali, Snacks)', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                          ],
+                        ),
+                      ),
+                      IconButton(icon: const Icon(Icons.close, color: AppColors.textSecondary), onPressed: () => Navigator.pop(ctx)),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Divider(height: 1),
+                  const SizedBox(height: 16),
+                  const Text('कैटेगरी का नाम (Category Name)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: catCtrl,
+                    autofocus: true,
+                    decoration: InputDecoration(
+                      hintText: 'उदा. Chinese, Thali, Snacks, Drinks',
+                      prefixIcon: const Icon(Icons.bookmark_outline, color: AppColors.primary),
+                      filled: true,
+                      fillColor: AppColors.grey50,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+                    ),
+                    validator: (v) => (v == null || v.trim().isEmpty) ? 'कैटेगरी नाम दर्ज करें' : null,
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Suggestion chips
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 6,
+                    children: ['Thali', 'Snacks', 'Chinese', 'Main Course', 'Beverages', 'Desserts'].map((sug) {
+                      return ActionChip(
+                        label: Text(sug, style: const TextStyle(fontSize: 12)),
+                        backgroundColor: AppColors.grey100,
+                        onPressed: () {
+                          catCtrl.text = sug;
+                          setModal(() {});
+                        },
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 20),
+
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        if (!formKey.currentState!.validate()) return;
+                        final name = catCtrl.text.trim();
+                        Navigator.pop(ctx);
+                        final repo = context.read<RestaurantRepository>();
+                        await repo.addCategory(name);
+                        setState(() {
+                          _selectedCategory = name;
+                        });
+                        await _loadData();
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('✅ Category "$name" जोड़ दी गई'), backgroundColor: AppColors.success, behavior: SnackBarBehavior.floating),
+                        );
+                      },
+                      icon: const Icon(Icons.add_circle_outline, size: 20),
+                      label: const Text('कैटेगरी जोड़ें (Save Category)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-            validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter category name' : null,
           ),
         ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () async {
-              if (!formKey.currentState!.validate()) return;
-              final name = catCtrl.text.trim();
-              Navigator.pop(ctx);
-              final repo = context.read<RestaurantRepository>();
-              await repo.addCategory(name);
-              setState(() {
-                _selectedCategory = name;
-              });
-              await _loadData();
-              if (!mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('✅ Category "$name" added'), behavior: SnackBarBehavior.floating),
-              );
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
-            child: const Text('जोड़ें (Add)'),
-          ),
-        ],
       ),
     );
   }
 
   Future<void> _deleteCategory(String name) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Delete Category "$name"?'),
-        content: Text('Are you sure you want to delete category "$name"? Menu items in this category will remain, but the category tab will be removed.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: Colors.white),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+    final ok = await _showConfirmDeleteSheet(
+      title: 'Category "$name" हटाएं?',
+      message: 'क्या आप सचमुच category "$name" को हटाना चाहते हैं?',
+      confirmText: 'हाँ, हटाएं (Delete)',
     );
 
     if (ok == true) {
@@ -331,165 +510,287 @@ class _RestaurantScreenState extends State<RestaurantScreen>
     String category = existing?.category ?? _selectedCategory;
     final formKey = GlobalKey<FormState>();
 
-    await showDialog(
+    await showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx2, setDlg) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-          title: Text(
-            isEdit ? 'डिश एडिट करें (Edit Dish)' : 'नई डिश जोड़ें (Add Food Item)',
-            style: const TextStyle(fontWeight: FontWeight.w700, fontFamily: 'Inter'),
+        builder: (ctx2, setModal) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           ),
-          content: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(
+            20, 12, 20,
+            MediaQuery.of(ctx2).viewInsets.bottom + 20,
+          ),
+          child: SingleChildScrollView(
             child: Form(
               key: formKey,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  TextFormField(
-                    controller: nameCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Dish Name (डिश का नाम)',
-                      hintText: 'e.g. Paneer Butter Masala',
-                      prefixIcon: Icon(Icons.restaurant),
+                  Center(
+                    child: Container(
+                      width: 44,
+                      height: 4,
+                      decoration: BoxDecoration(color: AppColors.grey300, borderRadius: BorderRadius.circular(2)),
                     ),
-                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter dish name' : null,
                   ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: priceCtrl,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Price (कीमत ₹)',
-                      hintText: 'e.g. 180',
-                      prefixIcon: Icon(Icons.currency_rupee),
-                    ),
-                    validator: (v) {
-                      if (v == null || v.trim().isEmpty) return 'Enter price';
-                      final p = double.tryParse(v);
-                      if (p == null || p < 0) return 'Enter a valid price';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    value: _categories.contains(category) ? category : (_categories.isNotEmpty ? _categories.first : null),
-                    decoration: const InputDecoration(
-                      labelText: 'Category (कैटेगरी)',
-                      prefixIcon: Icon(Icons.category),
-                    ),
-                    items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-                    onChanged: (v) {
-                      if (v != null) setDlg(() => category = v);
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  const Text('Type / प्रकार:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 16),
                   Row(
                     children: [
-                      ChoiceChip(
-                        label: const Row(
-                          mainAxisSize: MainAxisSize.min,
+                      Container(
+                        width: 42,
+                        height: 42,
+                        decoration: BoxDecoration(color: AppColors.primarySurface, borderRadius: BorderRadius.circular(12)),
+                        child: const Icon(Icons.restaurant_menu, color: AppColors.primary, size: 22),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Icon(Icons.circle, color: Color(0xFF22C55E), size: 14),
-                            SizedBox(width: 6),
-                            Text('Veg (शाकाहारी)'),
+                            Text(
+                              isEdit ? 'डिश एडिट करें (Edit Dish)' : 'नई डिश जोड़ें (Add Dish)',
+                              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, fontFamily: 'Inter'),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              isEdit ? 'डिश का नाम, कीमत या कैटेगरी बदलें' : 'मेन्यू में नया खाद्य पदार्थ जोड़ें',
+                              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                            ),
                           ],
                         ),
-                        selected: isVeg,
-                        selectedColor: const Color(0xFFDCFCE7),
-                        onSelected: (v) => setDlg(() => isVeg = true),
+                      ),
+                      IconButton(icon: const Icon(Icons.close, color: AppColors.textSecondary), onPressed: () => Navigator.pop(ctx)),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  const Divider(height: 1),
+                  const SizedBox(height: 16),
+
+                  // Veg / Non-veg selector cards
+                  const Text('व्यंजन का प्रकार (Food Type)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setModal(() => isVeg = true),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: isVeg ? const Color(0xFFDCFCE7) : AppColors.grey50,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isVeg ? const Color(0xFF22C55E) : AppColors.border,
+                                width: isVeg ? 1.5 : 1,
+                              ),
+                            ),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.circle, color: Color(0xFF22C55E), size: 14),
+                                SizedBox(width: 8),
+                                Text('शाकाहारी (Veg)', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Color(0xFF15803D))),
+                              ],
+                            ),
+                          ),
+                        ),
                       ),
                       const SizedBox(width: 10),
-                      ChoiceChip(
-                        label: const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.circle, color: Color(0xFFEF4444), size: 14),
-                            SizedBox(width: 6),
-                            Text('Non-Veg (मांसाहारी)'),
-                          ],
+                      Expanded(
+                        child: GestureDetector(
+                          onTap: () => setModal(() => isVeg = false),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                            decoration: BoxDecoration(
+                              color: !isVeg ? const Color(0xFFFEE2E2) : AppColors.grey50,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: !isVeg ? const Color(0xFFEF4444) : AppColors.border,
+                                width: !isVeg ? 1.5 : 1,
+                              ),
+                            ),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.circle, color: Color(0xFFEF4444), size: 14),
+                                SizedBox(width: 8),
+                                Text('मांसाहारी (Non-Veg)', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Color(0xFFB91C1C))),
+                              ],
+                            ),
+                          ),
                         ),
-                        selected: !isVeg,
-                        selectedColor: const Color(0xFFFEE2E2),
-                        onSelected: (v) => setDlg(() => isVeg = false),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 16),
+
+                  // Dish Name
+                  const Text('डिश का नाम (Dish Name)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 8),
+                  TextFormField(
+                    controller: nameCtrl,
+                    decoration: InputDecoration(
+                      hintText: 'उदा. Paneer Butter Masala, Roti, Dal Tadka',
+                      prefixIcon: const Icon(Icons.fastfood_outlined, color: AppColors.primary),
+                      filled: true,
+                      fillColor: AppColors.grey50,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+                    ),
+                    validator: (v) => (v == null || v.trim().isEmpty) ? 'डिश का नाम दर्ज करें' : null,
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Price & Category in row
+                  Row(
+                    children: [
+                      // Price
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('कीमत (Price ₹)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                            const SizedBox(height: 8),
+                            TextFormField(
+                              controller: priceCtrl,
+                              keyboardType: TextInputType.number,
+                              decoration: InputDecoration(
+                                hintText: 'उदा. 180',
+                                prefixText: '₹ ',
+                                prefixStyle: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.primary),
+                                filled: true,
+                                fillColor: AppColors.grey50,
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+                              ),
+                              validator: (v) {
+                                if (v == null || v.trim().isEmpty) return 'कीमत दर्ज करें';
+                                final p = double.tryParse(v);
+                                if (p == null || p < 0) return 'अवैध कीमत';
+                                return null;
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      // Category
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('कैटेगरी (Category)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                            const SizedBox(height: 8),
+                            DropdownButtonFormField<String>(
+                              value: _categories.contains(category) ? category : (_categories.isNotEmpty ? _categories.first : null),
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: AppColors.grey50,
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                              ),
+                              items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)))).toList(),
+                              onChanged: (v) {
+                                if (v != null) setModal(() => category = v);
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Description
+                  const Text('विवरण (Description - Optional)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 8),
                   TextFormField(
                     controller: descCtrl,
                     maxLines: 2,
-                    decoration: const InputDecoration(
-                      labelText: 'Description (विवरण - Optional)',
-                      hintText: 'Brief detail about the dish...',
-                      prefixIcon: Icon(Icons.notes),
+                    decoration: InputDecoration(
+                      hintText: 'उदा. Rich gravy with butter and fresh paneer',
+                      prefixIcon: const Icon(Icons.notes_outlined, color: AppColors.textSecondary),
+                      filled: true,
+                      fillColor: AppColors.grey50,
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                      enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+                    ),
+                  ),
+                  const SizedBox(height: 22),
+
+                  // Submit Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton.icon(
+                      onPressed: () async {
+                        if (!formKey.currentState!.validate()) return;
+                        final name = nameCtrl.text.trim();
+                        final price = double.parse(priceCtrl.text.trim());
+                        final desc = descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim();
+                        Navigator.pop(ctx);
+
+                        final repo = context.read<RestaurantRepository>();
+                        final payload = {
+                          'name': name,
+                          'price': price,
+                          'category': category,
+                          'isVeg': isVeg,
+                          'description': desc,
+                        };
+
+                        if (isEdit) {
+                          await repo.updateMenuItem(existing.id, payload);
+                        } else {
+                          await repo.addMenuItem(payload);
+                        }
+                        await _loadData();
+                        if (!mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(isEdit ? '✅ "$name" अपडेट हो गया' : '✅ "$name" मेन्यू में जोड़ दिया गया'),
+                            backgroundColor: AppColors.success,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      },
+                      icon: Icon(isEdit ? Icons.check_circle_outline : Icons.add, size: 20),
+                      label: Text(
+                        isEdit ? 'डिश अपडेट करें (Save Changes)' : 'डिश सुरक्षित करें (Save Dish)',
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 1,
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
           ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-            ElevatedButton(
-              onPressed: () async {
-                if (!formKey.currentState!.validate()) return;
-                final name = nameCtrl.text.trim();
-                final price = double.parse(priceCtrl.text.trim());
-                final desc = descCtrl.text.trim().isEmpty ? null : descCtrl.text.trim();
-                Navigator.pop(ctx);
-
-                final repo = context.read<RestaurantRepository>();
-                final payload = {
-                  'name': name,
-                  'price': price,
-                  'category': category,
-                  'isVeg': isVeg,
-                  'description': desc,
-                };
-
-                if (isEdit) {
-                  await repo.updateMenuItem(existing.id, payload);
-                } else {
-                  await repo.addMenuItem(payload);
-                }
-                await _loadData();
-                if (!mounted) return;
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(isEdit ? '✅ "$name" updated' : '✅ "$name" added to menu'),
-                    behavior: SnackBarBehavior.floating,
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary, foregroundColor: Colors.white),
-              child: Text(isEdit ? 'अपडेट करें (Save)' : 'जोड़ें (Add)'),
-            ),
-          ],
         ),
       ),
     );
   }
 
   Future<void> _deleteMenuItem(MenuItem item) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Delete "${item.name}"?'),
-        content: Text('Remove "${item.name}" from the menu?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: Colors.white),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
+    final ok = await _showConfirmDeleteSheet(
+      title: '"${item.name}" हटाएं?',
+      message: 'क्या आप सचमुच "${item.name}" को मेन्यू से हटाना चाहते हैं?',
+      confirmText: 'हाँ, हटाएं (Delete)',
     );
 
     if (ok == true) {
@@ -498,9 +799,95 @@ class _RestaurantScreenState extends State<RestaurantScreen>
       await _loadData();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('🗑️ Item deleted'), behavior: SnackBarBehavior.floating),
+        SnackBar(content: Text('🗑️ "${item.name}" हटा दी गई'), behavior: SnackBarBehavior.floating),
       );
     }
+  }
+
+  Future<bool?> _showConfirmDeleteSheet({
+    required String title,
+    required String message,
+    required String confirmText,
+  }) {
+    return showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 28),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Center(
+              child: Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(color: AppColors.grey300, borderRadius: BorderRadius.circular(2)),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Container(
+              width: 54,
+              height: 54,
+              decoration: const BoxDecoration(
+                color: AppColors.errorLight,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.delete_forever_rounded, color: AppColors.error, size: 30),
+            ),
+            const SizedBox(height: 14),
+            Text(
+              title,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, fontFamily: 'Inter'),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              message,
+              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 22),
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 48,
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: AppColors.border),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('रद्द करें (Cancel)', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: SizedBox(
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.error,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
+                      child: Text(confirmText, style: const TextStyle(fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   // ───────────────────────────────────────────────────────────────────────────
@@ -882,10 +1269,11 @@ class _RestaurantScreenState extends State<RestaurantScreen>
         ],
         bottom: TabBar(
           controller: _tabController,
+          labelPadding: const EdgeInsets.symmetric(horizontal: 10),
           tabs: const [
-            Tab(icon: Icon(Icons.table_restaurant), text: 'Tables (टेबल्स)'),
-            Tab(icon: Icon(Icons.restaurant_menu), text: 'Menu & Order (मेन्यू)'),
-            Tab(icon: Icon(Icons.receipt_long), text: 'Bills (बिल इतिहास)'),
+            Tab(icon: Icon(Icons.table_restaurant, size: 20), text: 'टेबल्स (Tables)'),
+            Tab(icon: Icon(Icons.restaurant_menu, size: 20), text: 'मेन्यू (Menu)'),
+            Tab(icon: Icon(Icons.receipt_long, size: 20), text: 'बिल (Bills)'),
           ],
         ),
       ),
@@ -925,28 +1313,35 @@ class _RestaurantScreenState extends State<RestaurantScreen>
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'डाइनिंग टेबल प्रबंधन (Tables)',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, fontFamily: 'Inter'),
-                  ),
-                  Text(
-                    'कुल टेबल: ${_tables.length}',
-                    style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-                  ),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'डाइनिंग टेबल प्रबंधन',
+                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, fontFamily: 'Inter'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      'कुल टेबल: ${_tables.length}',
+                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               ElevatedButton.icon(
                 onPressed: () => _showAddEditTableDialog(),
-                icon: const Icon(Icons.add, size: 18),
-                label: const Text('टेबल जोड़ें (Add Table)', style: TextStyle(fontWeight: FontWeight.w700)),
+                icon: const Icon(Icons.add, size: 16),
+                label: const Text('टेबल जोड़ें', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
               ),
             ],
@@ -991,62 +1386,44 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                       BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6, offset: const Offset(0, 2)),
                     ],
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                   child: Row(
                     children: [
                       // Table Icon
                       Container(
-                        width: 46,
-                        height: 46,
+                        width: 44,
+                        height: 44,
                         decoration: BoxDecoration(
                           color: AppColors.primary.withOpacity(0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(Icons.table_restaurant, color: AppColors.primary, size: 26),
+                        child: const Icon(Icons.table_restaurant, color: AppColors.primary, size: 24),
                       ),
-                      const SizedBox(width: 14),
+                      const SizedBox(width: 12),
 
                       // Table Info
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
                               'Table ${t.number}',
-                              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, fontFamily: 'Inter'),
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, fontFamily: 'Inter'),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
-                            const SizedBox(height: 3),
+                            const SizedBox(height: 2),
                             Text(
                               '${t.capacity} सीटें (${t.capacity} Seater)',
-                              style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
+                              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ],
                         ),
                       ),
-
-                      // Edit Button
-                      IconButton(
-                        tooltip: 'टेबल एडिट करें (Edit)',
-                        onPressed: () => _showAddEditTableDialog(t),
-                        icon: const Icon(Icons.edit_outlined, color: AppColors.primary, size: 20),
-                        style: IconButton.styleFrom(
-                          backgroundColor: AppColors.primary.withOpacity(0.08),
-                          padding: const EdgeInsets.all(8),
-                        ),
-                      ),
                       const SizedBox(width: 8),
-
-                      // Delete Button
-                      IconButton(
-                        tooltip: 'टेबल हटाएं (Delete)',
-                        onPressed: () => _deleteTable(t),
-                        icon: const Icon(Icons.delete_outline, color: AppColors.error, size: 20),
-                        style: IconButton.styleFrom(
-                          backgroundColor: AppColors.error.withOpacity(0.08),
-                          padding: const EdgeInsets.all(8),
-                        ),
-                      ),
-                      const SizedBox(width: 10),
 
                       // Order Button
                       ElevatedButton.icon(
@@ -1064,14 +1441,50 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                           );
                         },
                         icon: const Icon(Icons.add_shopping_cart, size: 14),
-                        label: const Text('ऑर्डर (Order)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                        label: const Text('ऑर्डर', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           foregroundColor: Colors.white,
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                           elevation: 0,
                         ),
+                      ),
+                      const SizedBox(width: 4),
+
+                      // More Actions (Edit / Delete)
+                      PopupMenuButton<String>(
+                        icon: const Icon(Icons.more_vert, color: AppColors.textSecondary, size: 20),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        onSelected: (val) {
+                          if (val == 'edit') _showAddEditTableDialog(t);
+                          if (val == 'delete') _deleteTable(t);
+                        },
+                        itemBuilder: (_) => [
+                          const PopupMenuItem(
+                            value: 'edit',
+                            child: Row(
+                              children: [
+                                Icon(Icons.edit_outlined, size: 18, color: AppColors.primary),
+                                SizedBox(width: 8),
+                                Text('एडिट करें (Edit)'),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem(
+                            value: 'delete',
+                            child: Row(
+                              children: [
+                                Icon(Icons.delete_outline, size: 18, color: AppColors.error),
+                                SizedBox(width: 8),
+                                Text('हटाएं (Delete)', style: TextStyle(color: AppColors.error)),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -1179,24 +1592,33 @@ class _RestaurantScreenState extends State<RestaurantScreen>
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  const Icon(Icons.restaurant_menu, color: AppColors.primary, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    '$_selectedCategory (${filtered.length})',
-                    style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, fontFamily: 'Inter'),
-                  ),
-                ],
+              Expanded(
+                child: Row(
+                  children: [
+                    const Icon(Icons.restaurant_menu, color: AppColors.primary, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '$_selectedCategory (${filtered.length})',
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, fontFamily: 'Inter'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 8),
               ElevatedButton.icon(
                 onPressed: () => _showAddEditMenuItemDialog(),
                 icon: const Icon(Icons.add, size: 16),
-                label: const Text('डिश जोड़ें (Add Item)', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+                label: const Text('डिश जोड़ें', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  minimumSize: Size.zero,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
               ),
@@ -1265,6 +1687,8 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                                 Text(
                                   item.name,
                                   style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, fontFamily: 'Inter'),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                                 if (item.description != null && item.description!.isNotEmpty) ...[
                                   const SizedBox(height: 2),
@@ -1284,23 +1708,39 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                             ),
                           ),
 
-                          // Edit / Delete buttons
-                          IconButton(
-                            onPressed: () => _showAddEditMenuItemDialog(item),
-                            icon: const Icon(Icons.edit, size: 18, color: AppColors.textSecondary),
+                          // Edit / Delete PopupMenu
+                          PopupMenuButton<String>(
+                            icon: const Icon(Icons.more_vert, size: 20, color: AppColors.textSecondary),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
-                            tooltip: 'Edit Dish',
+                            onSelected: (val) {
+                              if (val == 'edit') _showAddEditMenuItemDialog(item);
+                              if (val == 'delete') _deleteMenuItem(item);
+                            },
+                            itemBuilder: (_) => [
+                              const PopupMenuItem(
+                                value: 'edit',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.edit_outlined, size: 18, color: AppColors.primary),
+                                    SizedBox(width: 8),
+                                    Text('एडिट करें (Edit)'),
+                                  ],
+                                ),
+                              ),
+                              const PopupMenuItem(
+                                value: 'delete',
+                                child: Row(
+                                  children: [
+                                    Icon(Icons.delete_outline, size: 18, color: AppColors.error),
+                                    SizedBox(width: 8),
+                                    Text('हटाएं (Delete)', style: TextStyle(color: AppColors.error)),
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                           const SizedBox(width: 8),
-                          IconButton(
-                            onPressed: () => _deleteMenuItem(item),
-                            icon: const Icon(Icons.delete_outline, size: 18, color: AppColors.error),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            tooltip: 'Delete Dish',
-                          ),
-                          const SizedBox(width: 12),
 
                           // Cart Add / Quantity control
                           if (inCartQty == 0)

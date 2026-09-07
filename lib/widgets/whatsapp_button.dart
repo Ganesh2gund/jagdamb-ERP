@@ -75,13 +75,13 @@ class WhatsAppSendChip extends StatelessWidget {
         );
       },
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
           color: const Color(0xFF25D366),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF25D366).withOpacity(0.3),
+              color: const Color(0xFF25D366).withAlpha(60),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -92,12 +92,15 @@ class WhatsAppSendChip extends StatelessWidget {
           children: [
             Icon(Icons.chat, size: 18, color: Colors.white),
             SizedBox(width: 8),
-            Text(
-              'Send WhatsApp (व्हाट्सएप भेजें)',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
+            Flexible(
+              child: Text(
+                'Send WhatsApp (व्हाट्सएप)',
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
             ),
           ],

@@ -173,16 +173,14 @@ class _BookingCard extends StatelessWidget {
               children: [
                 const Icon(Icons.calendar_today_outlined, size: 14, color: AppColors.textSecondary),
                 const SizedBox(width: 6),
-                Text(
-                  AppFormatters.formatDateRange(booking.checkIn, booking.checkOut),
-                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontFamily: 'Inter', fontWeight: FontWeight.w500),
+                Expanded(
+                  child: Text(
+                    '${AppFormatters.formatDateRange(booking.checkIn, booking.checkOut)} (${booking.nights}N)',
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontFamily: 'Inter', fontWeight: FontWeight.w500),
+                  ),
                 ),
-                const SizedBox(width: 4),
-                Text(
-                  '(${booking.nights}N)',
-                  style: const TextStyle(fontSize: 12, color: AppColors.textTertiary, fontFamily: 'Inter'),
-                ),
-                const Spacer(),
+                const SizedBox(width: 8),
                 const Icon(Icons.people_outline, size: 14, color: AppColors.textSecondary),
                 const SizedBox(width: 4),
                 Text(

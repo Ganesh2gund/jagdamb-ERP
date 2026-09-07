@@ -55,38 +55,108 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
 
   Future<void> _confirmCancelBooking() async {
     final reasonController = TextEditingController();
-    final confirmed = await showDialog<bool>(
+    final confirmed = await showModalBottomSheet<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Cancel Booking', style: TextStyle(fontWeight: FontWeight.w700)),
-        content: Column(
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: EdgeInsets.fromLTRB(
+          20, 12, 20,
+          MediaQuery.of(ctx).viewInsets.bottom + 20,
+        ),
+        child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Are you sure you want to cancel this booking? The room will be released immediately back to Available.'),
+            Center(
+              child: Container(
+                width: 44,
+                height: 4,
+                decoration: BoxDecoration(color: AppColors.grey300, borderRadius: BorderRadius.circular(2)),
+              ),
+            ),
             const SizedBox(height: 16),
+            Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: const BoxDecoration(color: AppColors.errorLight, shape: BoxShape.circle),
+                  child: const Icon(Icons.cancel_outlined, color: AppColors.error, size: 24),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('बुकिंग रद्द करें (Cancel Booking)', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, fontFamily: 'Inter')),
+                      SizedBox(height: 2),
+                      Text('कमरा तुरंत वापस उपलब्ध (Available) हो जाएगा', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                    ],
+                  ),
+                ),
+                IconButton(icon: const Icon(Icons.close, color: AppColors.textSecondary), onPressed: () => Navigator.pop(ctx, false)),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Divider(height: 1),
+            const SizedBox(height: 16),
+            const Text('रद्द करने का कारण (Cancellation Reason)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
             TextField(
               controller: reasonController,
-              decoration: const InputDecoration(
-                labelText: 'Cancellation Reason',
-                hintText: 'e.g., Guest requested cancellation',
-                border: OutlineInputBorder(),
-              ),
               maxLines: 2,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: 'उदा. गेस्ट ने यात्रा रद्द की / इमरजेंसी',
+                prefixIcon: const Icon(Icons.edit_note, color: AppColors.error),
+                filled: true,
+                fillColor: AppColors.grey50,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.error, width: 2)),
+              ),
+            ),
+            const SizedBox(height: 22),
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 48,
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: AppColors.border),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('रखें (Keep Booking)', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: SizedBox(
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(ctx, true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.error,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
+                      ),
+                      child: const Text('रद्द करें (Cancel)', style: TextStyle(fontWeight: FontWeight.w700)),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Keep Booking'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error, foregroundColor: Colors.white),
-            child: const Text('Confirm Cancel'),
-          ),
-        ],
       ),
     );
 
@@ -101,6 +171,159 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
         const SnackBar(
           content: Text('Booking cancelled successfully and room released!'),
           backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      _loadBooking();
+    }
+  }
+
+  Future<void> _collectPaymentSheet(Booking b) async {
+    final amountController = TextEditingController(text: b.pendingAmount.toStringAsFixed(0));
+    String paymentMode = 'Cash';
+
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          padding: EdgeInsets.fromLTRB(
+            20, 20, 20,
+            MediaQuery.of(ctx).viewInsets.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'पेमेंट प्राप्त करें (Collect Payment)',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Inter'),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                    onPressed: () => Navigator.pop(ctx, false),
+                  ),
+                ],
+              ),
+              const Divider(height: 1),
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.grey50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text('अतिथि: ${b.guestName}', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                    Text('कमरा: ${b.roomNumber}', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.primary)),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text('जमा की जाने वाली राशि (Amount)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              TextField(
+                controller: amountController,
+                keyboardType: TextInputType.number,
+                autofocus: true,
+                decoration: InputDecoration(
+                  prefixText: '₹ ',
+                  prefixStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textPrimary),
+                  filled: true,
+                  fillColor: AppColors.grey50,
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
+                ),
+              ),
+              const SizedBox(height: 14),
+              const Text('भुगतान का माध्यम (Payment Mode)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              Row(
+                children: ['Cash', 'UPI', 'Card'].map((mode) {
+                  final isSel = paymentMode == mode;
+                  return Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: GestureDetector(
+                        onTap: () => setSheetState(() => paymentMode = mode),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 10),
+                          decoration: BoxDecoration(
+                            color: isSel ? AppColors.primary : AppColors.grey50,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: isSel ? AppColors.primary : AppColors.border),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            mode,
+                            style: TextStyle(
+                              color: isSel ? Colors.white : AppColors.textPrimary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.success,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  onPressed: () => Navigator.pop(ctx, true),
+                  icon: const Icon(Icons.check_circle_outline, size: 20),
+                  label: const Text('पेमेंट जमा करें (Confirm Payment)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (confirmed == true) {
+      final collected = double.tryParse(amountController.text.trim()) ?? 0.0;
+      if (collected <= 0) return;
+      final newPaid = b.paidAmount + collected;
+      final newStatus = newPaid >= b.totalAmount ? PaymentStatus.paid : PaymentStatus.partial;
+      final repo = context.read<BookingRepository>();
+      await repo.updatePaymentStatus(b.id, newStatus, newPaid);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('₹${collected.toStringAsFixed(0)} ($paymentMode) पेमेंट सफलता से जमा हुआ!'),
+          backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -246,9 +469,16 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('भुगतान व अग्रिम (Payment Details)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, fontFamily: 'Inter')),
+                    const Expanded(
+                      child: Text(
+                        'भुगतान विवरण (Payment Details)',
+                        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, fontFamily: 'Inter'),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
                         color: b.paymentStatus == PaymentStatus.paid
                             ? AppColors.successLight
@@ -271,10 +501,30 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                InfoRow(label: 'कुल कमरा किराया (Total)', value: AppFormatters.formatCurrency(b.totalAmount)),
-                InfoRow(label: 'अग्रिम जमा (Advance Paid)', value: AppFormatters.formatCurrency(b.paidAmount), valueColor: AppColors.success),
+                InfoRow(label: 'कमरा किराया (Total)', value: AppFormatters.formatCurrency(b.totalAmount)),
+                InfoRow(label: 'अग्रिम जमा (Advance)', value: AppFormatters.formatCurrency(b.paidAmount), valueColor: AppColors.success),
                 if (b.pendingAmount > 0)
-                  InfoRow(label: 'चेकआउट पर बाकी (Pending)', value: AppFormatters.formatCurrency(b.pendingAmount), valueColor: AppColors.error),
+                  InfoRow(label: 'बाकी रकम (Pending)', value: AppFormatters.formatCurrency(b.pendingAmount), valueColor: AppColors.error),
+                if (b.pendingAmount > 0 && b.status != BookingStatus.cancelled) ...[
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.success,
+                        side: const BorderSide(color: AppColors.success),
+                        padding: const EdgeInsets.symmetric(vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      onPressed: () => _collectPaymentSheet(b),
+                      icon: const Icon(Icons.payments_outlined, size: 18),
+                      label: Text(
+                        '💰 बकाया ₹${b.pendingAmount.toStringAsFixed(0)} जमा करें (Collect)',
+                        style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                      ),
+                    ),
+                  ),
+                ],
               ]),
             ),
             const SizedBox(height: 20),

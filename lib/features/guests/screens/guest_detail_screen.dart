@@ -69,7 +69,13 @@ class _GuestDetailScreenState extends State<GuestDetailScreen> {
                 const SizedBox(width: 16),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Row(children: [
-                    Text(g.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, fontFamily: 'Inter')),
+                    Expanded(
+                      child: Text(
+                        g.name,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, fontFamily: 'Inter'),
+                      ),
+                    ),
                     if (g.isVip) const Padding(padding: EdgeInsets.only(left: 6), child: Text('⭐', style: TextStyle(fontSize: 16))),
                   ]),
                   const SizedBox(height: 4),

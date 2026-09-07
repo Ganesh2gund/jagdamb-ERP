@@ -5,7 +5,6 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../models/booking.dart';
 import '../../../models/room.dart';
-import '../../../core/utils/web_printer.dart';
 import '../../../repositories/booking_repository.dart';
 import '../../../repositories/room_repository.dart';
 import '../../../widgets/common_widgets.dart';
@@ -180,60 +179,28 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            // Actions
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  WebPrinter.printInvoice(
-                    invoiceNumber: 'INV-${b.id.substring(0, b.id.length > 6 ? 6 : b.id.length).toUpperCase()}',
-                    guestName: b.guestName,
-                    guestPhone: b.guestPhone,
-                    roomNumber: b.roomNumber,
-                    roomType: b.roomType,
-                    checkIn: AppFormatters.formatDate(b.checkIn),
-                    checkOut: AppFormatters.formatDate(b.checkOut),
-                    nights: b.nights > 0 ? b.nights : 1,
-                    roomCharge: _subtotal,
-                    totalAmount: _grandTotal,
-                    paidAmount: _grandTotal,
-                    advanceAmount: _paid,
-                  );
-                },
-                icon: const Icon(Icons.print, size: 20),
-                label: const Text('🖨️ सीधे बिल प्रिंट करें (Print Bill Now)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
+            // Actions: WhatsApp, View Invoice, Go to Rooms
+            WhatsAppSendChip(
+              phone: b.guestPhone,
+              guestName: b.guestName,
+              invoiceNumber: 'INV-${b.id.substring(0, b.id.length > 6 ? 6 : b.id.length).toUpperCase()}',
+              totalAmount: _grandTotal,
             ),
             const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
-              height: 48,
+              height: 46,
               child: OutlinedButton.icon(
                 onPressed: () {
                   Navigator.pop(ctx);
                   context.go('/billing/${b.id}');
                 },
                 icon: const Icon(Icons.receipt_long, size: 18),
-                label: const Text('बिल देखें (View Invoice Screen)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                label: const Text('📄 बिल देखें (View Invoice)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                 style: OutlinedButton.styleFrom(
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
               ),
-            ),
-            const SizedBox(height: 10),
-            // ── WhatsApp Button in checkout success dialog ──
-            WhatsAppSendChip(
-              phone: b.guestPhone,
-              guestName: b.guestName,
-              invoiceNumber: 'INV-${b.id.substring(0, b.id.length > 6 ? 6 : b.id.length).toUpperCase()}',
-              totalAmount: _grandTotal,
             ),
             const SizedBox(height: 10),
             SizedBox(
@@ -247,7 +214,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                 style: OutlinedButton.styleFrom(
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                child: const Text('ओके / कमरे देखें (Go to Rooms)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                child: const Text('कमरे देखें (Go to Rooms)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
               ),
             ),
           ],
@@ -358,9 +325,11 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                             children: [
                               const Icon(Icons.info_outline, color: AppColors.primary, size: 18),
                               const SizedBox(width: 8),
-                              Text(
-                                '${_upcomingBookings.length} बुकिंग्स चेक-इन के लिए तैयार हैं:',
-                                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.primary),
+                              Expanded(
+                                child: Text(
+                                  '${_upcomingBookings.length} बुकिंग्स चेक-इन के लिए तैयार हैं:',
+                                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.primary),
+                                ),
                               ),
                             ],
                           ),
@@ -509,11 +478,14 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
             const SizedBox(height: 24),
             const Row(
               children: [
-                Icon(Icons.history, color: AppColors.textSecondary, size: 20),
+                Icon(Icons.history, color: AppColors.textSecondary, size: 18),
                 SizedBox(width: 8),
-                Text(
-                  'हाल ही में चेकआउट हुए अतिथि (Recent Check-outs):',
-                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, fontFamily: 'Inter'),
+                Expanded(
+                  child: Text(
+                    'हाल ही में चेकआउट (Recent Check-outs):',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, fontFamily: 'Inter'),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
@@ -717,9 +689,11 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                       children: [
                         Icon(Icons.check_circle, color: AppColors.success, size: 18),
                         SizedBox(width: 8),
-                        Text(
-                          'पूरा भुगतान पहले ही हो चुका है (No Due)',
-                          style: TextStyle(color: AppColors.success, fontWeight: FontWeight.w700, fontSize: 13),
+                        Flexible(
+                          child: Text(
+                            'पूरा भुगतान पहले ही हो चुका है (No Due)',
+                            style: TextStyle(color: AppColors.success, fontWeight: FontWeight.w700, fontSize: 13),
+                          ),
                         ),
                       ],
                     ),
@@ -739,9 +713,11 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                     children: [
                       const Icon(Icons.payment, color: AppColors.primary, size: 20),
                       const SizedBox(width: 8),
-                      Text(
-                        'रुपये प्राप्त करने की पुष्टि (Collect ₹${_pending.toStringAsFixed(0)})',
-                        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, fontFamily: 'Inter'),
+                      Expanded(
+                        child: Text(
+                          'रुपये प्राप्त करने की पुष्टि (Collect ₹${_pending.toStringAsFixed(0)})',
+                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, fontFamily: 'Inter'),
+                        ),
                       ),
                     ],
                   ),

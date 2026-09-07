@@ -276,9 +276,12 @@ class _RoomCard extends StatelessWidget {
                       children: [
                         const Icon(Icons.person_outline, size: 13, color: AppColors.textSecondary),
                         const SizedBox(width: 4),
-                        Text(
-                          room.currentGuestName!,
-                          style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontFamily: 'Inter', fontWeight: FontWeight.w500),
+                        Expanded(
+                          child: Text(
+                            room.currentGuestName!,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontFamily: 'Inter', fontWeight: FontWeight.w500),
+                          ),
                         ),
                       ],
                     ),
