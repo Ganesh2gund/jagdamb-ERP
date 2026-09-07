@@ -21,6 +21,7 @@ import {
 } from '../models/index.js';
 import { store } from '../store/index.js';
 import { hotelSettings } from './settings.routes.js';
+import { SupabaseMasterService } from '../services/supabaseService.js';
 import mongoose from 'mongoose';
 
 // Active in-memory cycle cache
@@ -118,7 +119,7 @@ export async function performDataCleanup(reason = 'Manual/Scheduled Cleanup') {
     store.data.guests = [];
     store.data.notifications = [];
 
-    // Reset rooms in memory
+    // Reset rooms in memory and sync availability to Supabase (Master definitions stay permanent)
     for (const r of store.data.rooms) {
       r.status = 'available';
       delete r.currentGuestName;
@@ -126,16 +127,18 @@ export async function performDataCleanup(reason = 'Manual/Scheduled Cleanup') {
       delete r.currentBookingId;
       delete r.checkInDate;
       delete r.checkOutDate;
+      SupabaseMasterService.saveRoom(r).catch(() => {});
     }
 
-    // Reset tables in memory
+    // Reset tables in memory and sync to Supabase
     for (const t of (store.data.restaurantTables || [])) {
       t.status = 'available';
       t.currentOrderId = null;
       t.currentBillAmount = 0;
+      SupabaseMasterService.saveTable(t).catch(() => {});
     }
 
-    console.log('✅ Transactional data successfully cleaned! Master data (Rooms, Menu, Tables, Settings) is preserved.');
+    console.log('✅ Transactional data successfully cleaned from MongoDB! Master data in Supabase (Rooms, Menu, Tables, Settings) is 100% preserved.');
     return true;
   } catch (err) {
     console.error('❌ Data cleanup error:', err.message);

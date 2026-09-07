@@ -14,6 +14,7 @@ import {
   Invoice,
 } from '../models/index.js';
 import mongoose from 'mongoose';
+import { SupabaseMasterService } from '../services/supabaseService.js';
 
 class MongoBackedStore {
   constructor() {
@@ -26,24 +27,56 @@ class MongoBackedStore {
     return mongoose.connection.readyState === 1;
   }
 
-  // Initialize store: load all data from MongoDB Atlas into memory cache
+  // Initialize store: load master data from Supabase Cloud & transactional data from MongoDB
   async init() {
+    // 1. Load Permanent Master Data from Supabase Cloud
+    try {
+      console.log('🔄 Loading Master Data from Supabase Cloud...');
+      const [supaRooms, supaMenu, supaCats, supaTables] = await Promise.all([
+        SupabaseMasterService.getRooms(),
+        SupabaseMasterService.getMenu(),
+        SupabaseMasterService.getCategories(),
+        SupabaseMasterService.getTables(),
+      ]);
+
+      if (supaRooms && supaRooms.length > 0) {
+        this.data.rooms = supaRooms;
+        console.log(`✅ Loaded ${supaRooms.length} rooms from Supabase.`);
+      }
+      if (supaMenu && supaMenu.length > 0) {
+        this.data.restaurantMenu = supaMenu;
+        console.log(`✅ Loaded ${supaMenu.length} menu items from Supabase.`);
+      }
+      if (supaCats && supaCats.length > 0) {
+        this.data.restaurantCategories = supaCats;
+        console.log(`✅ Loaded ${supaCats.length} categories from Supabase.`);
+      }
+      if (supaTables && supaTables.length > 0) {
+        this.data.restaurantTables = supaTables;
+        console.log(`✅ Loaded ${supaTables.length} tables from Supabase.`);
+      }
+    } catch (err) {
+      console.warn('⚠️ Supabase Master Data load warning:', err.message);
+    }
+
     if (!this.isConnected()) {
-      console.log('ℹ️ MongoDB not connected; starting with local store.');
+      console.log('ℹ️ MongoDB not connected; starting with cached data.');
       return;
     }
 
     try {
-      console.log('🔄 Syncing local cache with MongoDB Atlas...');
+      console.log('🔄 Syncing transactional data with MongoDB Atlas...');
 
-      // 1. Rooms
-      const dbRooms = await Room.find().lean();
-      this.data.rooms = (dbRooms || []).map(r => {
-        const { _id, __v, ...rest } = r;
-        return rest;
-      });
+      // Fallback for rooms if Supabase was empty
+      if (!this.data.rooms || this.data.rooms.length === 0) {
+        const dbRooms = await Room.find().lean();
+        this.data.rooms = (dbRooms || []).map(r => {
+          const { _id, __v, ...rest } = r;
+          return rest;
+        });
+      }
 
-      // 2. Bookings
+      // 2. Bookings (Transactional - MongoDB)
       const dbBookings = await Booking.find().sort({ createdAt: -1 }).lean();
       if (dbBookings && dbBookings.length > 0) {
         this.data.bookings = dbBookings.map(b => {
@@ -61,56 +94,37 @@ class MongoBackedStore {
         });
       }
 
-      // 4. Restaurant Menu
-      const dbMenu = await MenuItem.find().lean();
-      if (dbMenu && dbMenu.length > 0) {
-        this.data.restaurantMenu = dbMenu.map(m => {
-          const { _id, __v, ...rest } = m;
-          return rest;
-        });
-      } else {
-        // Seed default menu items if empty
-        const initialMenu = [
-          { id: 'm1', name: 'Paneer Butter Masala', category: 'Main Course', price: 240, isVeg: true, description: 'Rich tomato gravy' },
-          { id: 'm2', name: 'Dal Tadka', category: 'Main Course', price: 160, isVeg: true, description: 'Yellow lentils with aromatic spices' },
-          { id: 'm3', name: 'Butter Naan', category: 'Breads', price: 40, isVeg: true, description: 'Crisp clay oven flatbread' },
-          { id: 'm4', name: 'Jeera Rice', category: 'Rice', price: 130, isVeg: true, description: 'Basmati rice with cumin' },
-          { id: 'm5', name: 'Cold Drink', category: 'Beverages', price: 20, isVeg: true, description: 'Chilled beverage' },
-          { id: 'm6', name: 'Mineral Water', category: 'Beverages', price: 20, isVeg: true, description: 'Packaged drinking water' },
-        ];
-        await MenuItem.insertMany(initialMenu);
-        this.data.restaurantMenu = initialMenu;
+      // Fallback for menu if Supabase was empty
+      if (!this.data.restaurantMenu || this.data.restaurantMenu.length === 0) {
+        const dbMenu = await MenuItem.find().lean();
+        if (dbMenu && dbMenu.length > 0) {
+          this.data.restaurantMenu = dbMenu.map(m => {
+            const { _id, __v, ...rest } = m;
+            return rest;
+          });
+        }
       }
 
-      // 5. Restaurant Categories
-      const dbCategories = await RestaurantCategory.find().lean();
-      if (dbCategories && dbCategories.length > 0) {
-        this.data.restaurantCategories = dbCategories.map(c => c.name);
-      } else {
-        const defaultCats = ['Main Course', 'Breads', 'Rice', 'Beverages', 'Starters', 'Desserts'];
-        await RestaurantCategory.insertMany(defaultCats.map(name => ({ name })));
-        this.data.restaurantCategories = defaultCats;
+      // Fallback for categories if Supabase was empty
+      if (!this.data.restaurantCategories || this.data.restaurantCategories.length === 0) {
+        const dbCategories = await RestaurantCategory.find().lean();
+        if (dbCategories && dbCategories.length > 0) {
+          this.data.restaurantCategories = dbCategories.map(c => c.name);
+        }
       }
 
-      // 6. Restaurant Tables
-      const dbTables = await RestaurantTable.find().lean();
-      if (dbTables && dbTables.length > 0) {
-        this.data.restaurantTables = dbTables.map(t => {
-          const { _id, __v, ...rest } = t;
-          return rest;
-        });
-      } else {
-        const defaultTables = [
-          { id: 'tbl_1', number: '1', capacity: 4, status: 'available', currentBillAmount: 0 },
-          { id: 'tbl_2', number: '2', capacity: 4, status: 'available', currentBillAmount: 0 },
-          { id: 'tbl_3', number: '3', capacity: 2, status: 'available', currentBillAmount: 0 },
-          { id: 'tbl_4', number: '4', capacity: 6, status: 'available', currentBillAmount: 0 },
-        ];
-        await RestaurantTable.insertMany(defaultTables);
-        this.data.restaurantTables = defaultTables;
+      // Fallback for tables if Supabase was empty
+      if (!this.data.restaurantTables || this.data.restaurantTables.length === 0) {
+        const dbTables = await RestaurantTable.find().lean();
+        if (dbTables && dbTables.length > 0) {
+          this.data.restaurantTables = dbTables.map(t => {
+            const { _id, __v, ...rest } = t;
+            return rest;
+          });
+        }
       }
 
-      // 7. Restaurant Orders
+      // 7. Restaurant Orders (Transactional - MongoDB)
       const dbOrders = await RestaurantOrder.find().sort({ createdAt: -1 }).lean();
       if (dbOrders && dbOrders.length > 0) {
         this.data.restaurantOrders = dbOrders.map(o => {
@@ -119,7 +133,7 @@ class MongoBackedStore {
         });
       }
 
-      // 8. Expenses
+      // 8. Expenses (Transactional - MongoDB)
       const dbExpenses = await Expense.find().sort({ date: -1 }).lean();
       if (dbExpenses && dbExpenses.length > 0) {
         this.data.expenses = dbExpenses.map(e => {
@@ -186,6 +200,9 @@ class MongoBackedStore {
       delete room.checkOutDate;
     }
 
+    // Save to Supabase Cloud (Master)
+    SupabaseMasterService.saveRoom(room).catch(e => console.error('Error updating room in Supabase:', e.message));
+
     if (this.isConnected()) {
       Room.findOneAndUpdate(
         { $or: [{ id: room.id }, { number: room.number }] },
@@ -213,6 +230,9 @@ class MongoBackedStore {
     room.currentBookingId = bookingId;
     room.checkInDate = checkInDate;
     room.checkOutDate = checkOutDate;
+
+    // Save to Supabase Cloud (Master)
+    SupabaseMasterService.saveRoom(room).catch(e => console.error('Error checking in room in Supabase:', e.message));
 
     if (this.isConnected()) {
       Room.findOneAndUpdate(
@@ -242,6 +262,9 @@ class MongoBackedStore {
     };
     this.data.rooms.push(newRoom);
 
+    // Save to Supabase Cloud (Master)
+    SupabaseMasterService.saveRoom(newRoom).catch(e => console.error('Error creating room in Supabase:', e.message));
+
     if (this.isConnected()) {
       Room.create(newRoom).catch(e => console.error('Error creating room in Mongo:', e.message));
     }
@@ -257,6 +280,9 @@ class MongoBackedStore {
       if (updates[key] !== undefined) room[key] = updates[key];
     }
 
+    // Save to Supabase Cloud (Master)
+    SupabaseMasterService.saveRoom(room).catch(e => console.error('Error updating room in Supabase:', e.message));
+
     if (this.isConnected()) {
       Room.findOneAndUpdate(
         { $or: [{ id: room.id }, { number: room.number }] },
@@ -271,6 +297,9 @@ class MongoBackedStore {
     const idx = this.data.rooms.findIndex(r => r.id === id || r.number === id);
     if (idx !== -1) {
       const removed = this.data.rooms.splice(idx, 1)[0];
+      // Delete from Supabase Cloud (Master)
+      SupabaseMasterService.deleteRoom(removed.id).catch(e => console.error('Error deleting room from Supabase:', e.message));
+
       if (this.isConnected()) {
         Room.deleteOne({ $or: [{ id: removed.id }, { number: removed.number }] })
           .catch(e => console.error('Error deleting room from Mongo:', e.message));
@@ -489,6 +518,9 @@ class MongoBackedStore {
     };
     this.data.restaurantMenu.push(newItem);
 
+    // Save to Supabase Cloud (Master)
+    SupabaseMasterService.saveMenuItem(newItem).catch(e => console.error('Error saving menu item in Supabase:', e.message));
+
     if (this.isConnected()) {
       MenuItem.create(newItem).catch(e => console.error('Error creating menu item in Mongo:', e.message));
     }
@@ -508,6 +540,9 @@ class MongoBackedStore {
     if (updates.description !== undefined) item.description = updates.description;
     if (updates.isAvailable !== undefined) item.isAvailable = updates.isAvailable;
 
+    // Save to Supabase Cloud (Master)
+    SupabaseMasterService.saveMenuItem(item).catch(e => console.error('Error updating menu item in Supabase:', e.message));
+
     if (this.isConnected()) {
       MenuItem.findOneAndUpdate({ id: item.id }, updates).catch(e => console.error('Error updating menu item in Mongo:', e.message));
     }
@@ -521,6 +556,9 @@ class MongoBackedStore {
     const idx = this.data.restaurantMenu.findIndex(m => String(m.id) === strId);
     if (idx !== -1) {
       const removed = this.data.restaurantMenu.splice(idx, 1)[0];
+      // Delete from Supabase Cloud (Master)
+      SupabaseMasterService.deleteMenuItem(removed.id).catch(e => console.error('Error deleting menu item from Supabase:', e.message));
+
       if (this.isConnected()) {
         MenuItem.deleteOne({ id: removed.id }).catch(e => console.error('Error deleting menu item in Mongo:', e.message));
       }
@@ -539,6 +577,9 @@ class MongoBackedStore {
     const clean = String(name).trim();
     if (!this.data.restaurantCategories.includes(clean)) {
       this.data.restaurantCategories.push(clean);
+      // Save to Supabase Cloud (Master)
+      SupabaseMasterService.saveCategory(clean).catch(e => console.error('Error saving category in Supabase:', e.message));
+
       if (this.isConnected()) {
         RestaurantCategory.create({ name: clean }).catch(e => console.error('Error creating category in Mongo:', e.message));
       }
@@ -552,6 +593,9 @@ class MongoBackedStore {
     const idx = this.data.restaurantCategories.indexOf(clean);
     if (idx !== -1) {
       this.data.restaurantCategories.splice(idx, 1);
+      // Delete from Supabase Cloud (Master)
+      SupabaseMasterService.deleteCategory(clean).catch(e => console.error('Error deleting category from Supabase:', e.message));
+
       if (this.isConnected()) {
         RestaurantCategory.deleteOne({ name: clean }).catch(e => console.error('Error deleting category in Mongo:', e.message));
       }
@@ -581,6 +625,9 @@ class MongoBackedStore {
     };
     this.data.restaurantTables.push(newTable);
 
+    // Save to Supabase Cloud (Master)
+    SupabaseMasterService.saveTable(newTable).catch(e => console.error('Error saving table in Supabase:', e.message));
+
     if (this.isConnected()) {
       RestaurantTable.create(newTable).catch(e => console.error('Error creating table in Mongo:', e.message));
     }
@@ -593,6 +640,9 @@ class MongoBackedStore {
     if (!table) return null;
     if (updates.number !== undefined) table.number = String(updates.number);
     if (updates.capacity !== undefined) table.capacity = Number(updates.capacity) || 4;
+
+    // Save to Supabase Cloud (Master)
+    SupabaseMasterService.saveTable(table).catch(e => console.error('Error updating table in Supabase:', e.message));
 
     if (this.isConnected()) {
       RestaurantTable.findOneAndUpdate({ id: table.id }, updates).catch(e => console.error('Error updating table in Mongo:', e.message));
@@ -607,6 +657,9 @@ class MongoBackedStore {
     const idx = this.data.restaurantTables.findIndex(t => String(t.id) === strId || String(t.number) === strId);
     if (idx !== -1) {
       const removed = this.data.restaurantTables.splice(idx, 1)[0];
+      // Delete from Supabase Cloud (Master)
+      SupabaseMasterService.deleteTable(removed.id).catch(e => console.error('Error deleting table from Supabase:', e.message));
+
       if (this.isConnected()) {
         RestaurantTable.deleteOne({ id: removed.id }).catch(e => console.error('Error deleting table in Mongo:', e.message));
       }
@@ -621,6 +674,9 @@ class MongoBackedStore {
     table.status = status;
     table.currentOrderId = currentOrderId;
     table.currentBillAmount = currentBillAmount;
+
+    // Save to Supabase Cloud (Master)
+    SupabaseMasterService.saveTable(table).catch(e => console.error('Error updating table status in Supabase:', e.message));
 
     if (this.isConnected()) {
       RestaurantTable.findOneAndUpdate({ id: table.id }, { status, currentOrderId, currentBillAmount })
