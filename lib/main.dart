@@ -74,13 +74,42 @@ class HotelErpApp extends StatelessWidget {
       theme: AppTheme.lightTheme,
       routerConfig: router.router,
       builder: (context, child) {
-        return Container(
-          color: const Color(0xFF0F172A), // Dark slate surrounding background on large screens
-          alignment: Alignment.center,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 450),
-            child: ClipRect(
-              child: child ?? const SizedBox.shrink(),
+        final screenWidth = MediaQuery.of(context).size.width;
+
+        // 100% edge-to-edge native mobile layout for phones & mobile viewports
+        if (screenWidth <= 520) {
+          return ColoredBox(
+            color: AppColors.background,
+            child: child ?? const SizedBox.shrink(),
+          );
+        }
+
+        // Sleek mobile mockup preview frame when viewed on desktop / laptop screens
+        return ColoredBox(
+          color: const Color(0xFF0F172A), // Dark slate backdrop
+          child: Center(
+            child: Container(
+              constraints: const BoxConstraints(
+                maxWidth: 440,
+                maxHeight: 920,
+              ),
+              margin: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+              decoration: BoxDecoration(
+                color: AppColors.background,
+                borderRadius: BorderRadius.circular(36),
+                border: Border.all(color: const Color(0xFF334155), width: 3),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.4),
+                    blurRadius: 36,
+                    offset: const Offset(0, 12),
+                  ),
+                ],
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(33),
+                child: child ?? const SizedBox.shrink(),
+              ),
             ),
           ),
         );

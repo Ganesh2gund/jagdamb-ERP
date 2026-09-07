@@ -9,9 +9,14 @@ class MoreScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = [
       _MoreItem(icon: Icons.assessment_outlined, label: '10-Day Report', route: '/report-cycle', color: AppColors.primary),
+      _MoreItem(icon: Icons.cleaning_services_outlined, label: 'Housekeeping', route: '/housekeeping', color: AppColors.cleaning),
       _MoreItem(icon: Icons.restaurant_outlined, label: 'Restaurant', route: '/restaurant', color: AppColors.cleaning),
+      _MoreItem(icon: Icons.people_outline, label: 'Guests', route: '/guests', color: AppColors.info),
+      _MoreItem(icon: Icons.receipt_outlined, label: 'Billing', route: '/billing', color: AppColors.success),
       _MoreItem(icon: Icons.inventory_2_outlined, label: 'Inventory', route: '/inventory', color: AppColors.reserved),
       _MoreItem(icon: Icons.receipt_long_outlined, label: 'Expenses', route: '/expenses', color: AppColors.warning),
+      _MoreItem(icon: Icons.badge_outlined, label: 'Staff', route: '/staff', color: AppColors.primaryLight),
+      _MoreItem(icon: Icons.build_outlined, label: 'Maintenance', route: '/maintenance', color: AppColors.maintenance),
       _MoreItem(icon: Icons.settings_outlined, label: 'Settings', route: '/settings', color: AppColors.textSecondary),
     ];
 

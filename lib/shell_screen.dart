@@ -24,49 +24,65 @@ class ShellScreen extends StatelessWidget {
     return Scaffold(
       body: child,
       bottomNavigationBar: Container(
-        decoration: const BoxDecoration(
-          border: Border(top: BorderSide(color: AppColors.border, width: 1)),
-        ),
-        child: BottomNavigationBar(
-          currentIndex: selectedIndex,
-          onTap: (index) {
-            switch (index) {
-              case 0:
-                context.go('/dashboard');
-                break;
-              case 1:
-                context.go('/rooms');
-                break;
-              case 2:
-                context.go('/bookings');
-                break;
-              case 3:
-                context.go('/more');
-                break;
-            }
-          },
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.dashboard_outlined),
-              activeIcon: Icon(Icons.dashboard),
-              label: 'Dashboard',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.hotel_outlined),
-              activeIcon: Icon(Icons.hotel),
-              label: 'Rooms',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.book_outlined),
-              activeIcon: Icon(Icons.book),
-              label: 'Bookings',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.grid_view_outlined),
-              activeIcon: Icon(Icons.grid_view),
-              label: 'More',
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          border: const Border(top: BorderSide(color: AppColors.border, width: 1)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 10,
+              offset: const Offset(0, -2),
             ),
           ],
+        ),
+        child: SafeArea(
+          top: false,
+          child: NavigationBar(
+            selectedIndex: selectedIndex,
+            elevation: 0,
+            backgroundColor: AppColors.surface,
+            indicatorColor: AppColors.primarySurface,
+            height: 64,
+            labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+            onDestinationSelected: (index) {
+              switch (index) {
+                case 0:
+                  context.go('/dashboard');
+                  break;
+                case 1:
+                  context.go('/rooms');
+                  break;
+                case 2:
+                  context.go('/bookings');
+                  break;
+                case 3:
+                  context.go('/more');
+                  break;
+              }
+            },
+            destinations: const [
+              NavigationDestination(
+                icon: Icon(Icons.dashboard_outlined),
+                selectedIcon: Icon(Icons.dashboard_rounded, color: AppColors.primary),
+                label: 'Dashboard',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.hotel_outlined),
+                selectedIcon: Icon(Icons.hotel_rounded, color: AppColors.primary),
+                label: 'Rooms',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.book_outlined),
+                selectedIcon: Icon(Icons.book_rounded, color: AppColors.primary),
+                label: 'Bookings',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.grid_view_outlined),
+                selectedIcon: Icon(Icons.grid_view_rounded, color: AppColors.primary),
+                label: 'More',
+              ),
+            ],
+          ),
         ),
       ),
     );
