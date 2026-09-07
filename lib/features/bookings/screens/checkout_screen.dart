@@ -185,6 +185,12 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
               guestName: b.guestName,
               invoiceNumber: 'INV-${b.id.substring(0, b.id.length > 6 ? 6 : b.id.length).toUpperCase()}',
               totalAmount: _grandTotal,
+              roomOrTable: 'Room ${b.roomNumber} (${b.roomType})',
+              items: [
+                'Room Stay (${b.nights} night(s)) : ₹${_grandTotal.toStringAsFixed(0)}',
+              ],
+              paymentMethod: 'Direct',
+              paymentStatus: 'PAID (पूर्ण भुगतान)',
             ),
             const SizedBox(height: 10),
             SizedBox(

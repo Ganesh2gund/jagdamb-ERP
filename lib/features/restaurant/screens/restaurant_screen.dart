@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
-import '../../../core/utils/web_printer.dart';
+import '../../../core/utils/whatsapp_helper.dart';
 import '../../../models/restaurant.dart';
 import '../../../repositories/restaurant_repository.dart';
 import '../../../widgets/common_widgets.dart';
-import '../../../widgets/whatsapp_button.dart';
 
 class RestaurantScreen extends StatefulWidget {
   const RestaurantScreen({super.key});
@@ -1176,6 +1175,8 @@ class _RestaurantScreenState extends State<RestaurantScreen>
   }
 
   void _showOrderSuccessDialog(RestaurantOrder order, String guestPhone) {
+    final phoneCtrl = TextEditingController(text: guestPhone);
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -1203,47 +1204,66 @@ class _RestaurantScreenState extends State<RestaurantScreen>
               AppFormatters.formatCurrency(order.total),
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppColors.primary),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 18),
 
-            // Print Receipt
+            // WhatsApp Phone Input Field
+            TextField(
+              controller: phoneCtrl,
+              keyboardType: TextInputType.phone,
+              decoration: InputDecoration(
+                isDense: true,
+                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                labelText: 'व्हाट्सएप नंबर (WhatsApp No.)',
+                hintText: '10 अंकों का मोबाइल नंबर',
+                prefixIcon: const Icon(Icons.phone, size: 18, color: Color(0xFF25D366)),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // WhatsApp Send Button (Replaces Print Bill)
             SizedBox(
               width: double.infinity,
-              height: 44,
+              height: 48,
               child: ElevatedButton.icon(
                 onPressed: () {
-                  WebPrinter.printRestaurantReceipt(
-                    orderId: order.id.substring(order.id.length > 8 ? order.id.length - 8 : 0).toUpperCase(),
-                    tableOrCounter: order.tableOrRoom ?? 'Counter',
-                    items: order.items.map((i) => {
-                      'name': i.menuItem.name,
-                      'price': i.menuItem.price,
-                      'quantity': i.quantity,
-                    }).toList(),
+                  final ph = phoneCtrl.text.trim();
+                  if (ph.isEmpty) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('कृपया ग्राहक का WhatsApp नंबर दर्ज करें'),
+                        backgroundColor: Colors.orange,
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                    return;
+                  }
+                  WhatsAppHelper.openWhatsApp(
+                    context: context,
+                    rawPhone: ph,
+                    customerName: order.guestName ?? 'Guest',
+                    invoiceNo: order.id.substring(order.id.length > 6 ? order.id.length - 6 : 0).toUpperCase(),
                     totalAmount: order.total,
+                    roomOrTable: order.tableOrRoom ?? 'Counter',
+                    items: order.items.map((i) => '${i.menuItem.name} × ${i.quantity} : ₹${i.total.toStringAsFixed(0)}').toList(),
                     paymentMethod: order.paymentMethod,
-                    guestName: order.guestName,
+                    paymentStatus: 'PAID',
+                    date: order.createdAt,
                   );
                 },
-                icon: const Icon(Icons.print, size: 18),
-                label: const Text('🖨️ रसीद प्रिंट करें (Print Bill)'),
+                icon: const Icon(Icons.chat, size: 20, color: Colors.white),
+                label: const Text(
+                  'Send WhatsApp (व्हाट्सएप भेजें)',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
+                ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
+                  backgroundColor: const Color(0xFF25D366),
                   foregroundColor: Colors.white,
+                  elevation: 2,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
               ),
             ),
-            const SizedBox(height: 10),
-
-            // WhatsApp button if phone provided or prompt
-            if (guestPhone.isNotEmpty)
-              WhatsAppSendChip(
-                phone: guestPhone,
-                guestName: order.guestName ?? 'Guest',
-                invoiceNumber: order.id.substring(order.id.length > 6 ? order.id.length - 6 : 0).toUpperCase(),
-                totalAmount: order.total,
-              ),
-
             const SizedBox(height: 10),
             SizedBox(
               width: double.infinity,
@@ -1903,23 +1923,11 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                   Row(
                     children: [
                       OutlinedButton.icon(
-                        onPressed: () {
-                          WebPrinter.printRestaurantReceipt(
-                            orderId: o.id.substring(o.id.length > 8 ? o.id.length - 8 : 0).toUpperCase(),
-                            tableOrCounter: o.tableOrRoom ?? 'Counter',
-                            items: o.items.map((it) => {
-                              'name': it.menuItem.name,
-                              'price': it.menuItem.price,
-                              'quantity': it.quantity,
-                            }).toList(),
-                            totalAmount: o.total,
-                            paymentMethod: o.paymentMethod,
-                            guestName: o.guestName,
-                          );
-                        },
-                        icon: const Icon(Icons.print, size: 14),
-                        label: const Text('प्रिंट', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700)),
+                        onPressed: () => _showBillDetailDialog(o),
+                        icon: const Icon(Icons.receipt_long, size: 14, color: AppColors.primary),
+                        label: const Text('बिल देखें', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary)),
                         style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: AppColors.primary),
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                         ),
@@ -1932,6 +1940,183 @@ class _RestaurantScreenState extends State<RestaurantScreen>
           ),
         );
       },
+    );
+  }
+
+  void _showBillDetailDialog(RestaurantOrder order) {
+    final phoneCtrl = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        titlePadding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+        contentPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        title: Row(
+          children: [
+            const Icon(Icons.receipt_long, color: AppColors.primary, size: 22),
+            const SizedBox(width: 8),
+            const Expanded(
+              child: Text(
+                'बिल विवरण (Bill Details)',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+            ),
+            IconButton(
+              onPressed: () => Navigator.pop(ctx),
+              icon: const Icon(Icons.close, size: 20),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.background,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.border),
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(order.tableOrRoom ?? 'Counter', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                        Text(
+                          'Paid (${order.paymentMethod})',
+                          style: const TextStyle(color: Color(0xFF16A34A), fontWeight: FontWeight.w700, fontSize: 12),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text('Guest: ${order.guestName ?? "Walk-in Guest"}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                        Text(AppFormatters.formatTime(order.createdAt), style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text('ऑर्डर आइटम (Items):', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
+              const SizedBox(height: 6),
+              ...order.items.map((it) => Padding(
+                padding: const EdgeInsets.symmetric(vertical: 3),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        '${it.menuItem.name} × ${it.quantity}',
+                        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                    Text(
+                      AppFormatters.formatCurrency(it.total),
+                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
+                    ),
+                  ],
+                ),
+              )),
+              const Divider(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text('कुल राशि (Total):', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                  Text(
+                    AppFormatters.formatCurrency(order.total),
+                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF16A34A)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+
+              // WhatsApp Section Inside Bill View
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF25D366).withValues(alpha: 0.08),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: const Color(0xFF25D366).withValues(alpha: 0.3)),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      children: [
+                        Icon(Icons.chat, size: 16, color: Color(0xFF25D366)),
+                        SizedBox(width: 6),
+                        Text('WhatsApp पर बिल भेजें:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF15803D))),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: phoneCtrl,
+                      keyboardType: TextInputType.phone,
+                      decoration: InputDecoration(
+                        isDense: true,
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        hintText: '10 अंकों का WhatsApp नंबर',
+                        prefixIcon: const Icon(Icons.phone, size: 16, color: Color(0xFF25D366)),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF25D366))),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 42,
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          final ph = phoneCtrl.text.trim();
+                          if (ph.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('कृपया 10 अंकों का WhatsApp नंबर दर्ज करें'),
+                                backgroundColor: Colors.orange,
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                            return;
+                          }
+                          Navigator.pop(ctx);
+                          WhatsAppHelper.openWhatsApp(
+                            context: context,
+                            rawPhone: ph,
+                            customerName: order.guestName ?? 'Guest',
+                            invoiceNo: order.id.substring(order.id.length > 6 ? order.id.length - 6 : 0).toUpperCase(),
+                            totalAmount: order.total,
+                            roomOrTable: order.tableOrRoom ?? 'Counter',
+                            items: order.items.map((i) => '${i.menuItem.name} × ${i.quantity} : ₹${i.total.toStringAsFixed(0)}').toList(),
+                            paymentMethod: order.paymentMethod,
+                            paymentStatus: 'PAID',
+                            date: order.createdAt,
+                          );
+                        },
+                        icon: const Icon(Icons.chat, size: 18, color: Colors.white),
+                        label: const Text('Send WhatsApp (व्हाट्सएप भेजें)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF25D366),
+                          elevation: 1,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

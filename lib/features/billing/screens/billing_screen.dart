@@ -116,6 +116,11 @@ class _BillingScreenState extends State<BillingScreen> {
       invoiceNo: 'INV-${b.id.substring(0, b.id.length > 6 ? 6 : b.id.length).toUpperCase()}',
       totalAmount: _grandTotal,
       hotelName: _hotelName,
+      roomOrTable: 'Room ${b.roomNumber} (${b.roomType})',
+      items: _items.map((i) => '${i.description} : ₹${i.total.toStringAsFixed(0)}').toList(),
+      paymentMethod: 'Direct',
+      paymentStatus: _isSettled ? 'PAID (पूर्ण भुगतान)' : 'PENDING / PARTIAL',
+      date: b.checkOut,
     );
   }
 

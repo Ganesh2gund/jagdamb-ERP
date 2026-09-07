@@ -8,6 +8,10 @@ class WhatsAppInvoiceButton extends StatelessWidget {
   final String guestName;
   final String invoiceNumber;
   final double totalAmount;
+  final String? roomOrTable;
+  final List<String>? items;
+  final String? paymentMethod;
+  final String? paymentStatus;
 
   const WhatsAppInvoiceButton({
     super.key,
@@ -15,6 +19,10 @@ class WhatsAppInvoiceButton extends StatelessWidget {
     required this.guestName,
     required this.invoiceNumber,
     required this.totalAmount,
+    this.roomOrTable,
+    this.items,
+    this.paymentMethod,
+    this.paymentStatus,
   });
 
   @override
@@ -29,6 +37,10 @@ class WhatsAppInvoiceButton extends StatelessWidget {
             customerName: guestName,
             invoiceNo: invoiceNumber,
             totalAmount: totalAmount,
+            roomOrTable: roomOrTable,
+            items: items,
+            paymentMethod: paymentMethod,
+            paymentStatus: paymentStatus,
           );
         },
         icon: const Icon(Icons.chat, size: 20),
@@ -53,6 +65,10 @@ class WhatsAppSendChip extends StatelessWidget {
   final String guestName;
   final String invoiceNumber;
   final double totalAmount;
+  final String? roomOrTable;
+  final List<String>? items;
+  final String? paymentMethod;
+  final String? paymentStatus;
 
   const WhatsAppSendChip({
     super.key,
@@ -60,6 +76,10 @@ class WhatsAppSendChip extends StatelessWidget {
     required this.guestName,
     required this.invoiceNumber,
     required this.totalAmount,
+    this.roomOrTable,
+    this.items,
+    this.paymentMethod,
+    this.paymentStatus,
   });
 
   @override
@@ -72,6 +92,10 @@ class WhatsAppSendChip extends StatelessWidget {
           customerName: guestName,
           invoiceNo: invoiceNumber,
           totalAmount: totalAmount,
+          roomOrTable: roomOrTable,
+          items: items,
+          paymentMethod: paymentMethod,
+          paymentStatus: paymentStatus,
         );
       },
       child: Container(

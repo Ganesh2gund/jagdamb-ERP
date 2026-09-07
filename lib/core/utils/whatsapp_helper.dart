@@ -36,30 +36,68 @@ class WhatsAppHelper {
     return digits;
   }
 
-  /// Builds the exact required invoice message text with dynamic hotel name
+  /// Builds a real, professional Bill / Receipt formatted message for WhatsApp
   static String buildInvoiceMessage({
     required String customerName,
     required String invoiceNo,
     required double totalAmount,
     String? hotelName,
+    String? roomOrTable,
+    List<String>? items,
+    String? paymentMethod,
+    String? paymentStatus,
+    DateTime? date,
   }) {
     final name = customerName.trim().isEmpty ? 'Guest' : customerName.trim();
     final hName = (hotelName != null && hotelName.trim().isNotEmpty)
         ? hotelName.trim()
-        : (WebPrinter.hotelName.trim().isNotEmpty ? WebPrinter.hotelName.trim() : 'our hotel');
+        : (WebPrinter.hotelName.trim().isNotEmpty ? WebPrinter.hotelName.trim() : 'Hotel Jagdamb');
     final amountStr = totalAmount.truncateToDouble() == totalAmount
         ? totalAmount.toInt().toString()
         : totalAmount.toStringAsFixed(2);
+    final d = date ?? DateTime.now();
+    final day = d.day.toString().padLeft(2, '0');
+    final mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.month - 1];
+    final yr = d.year;
+    final hour = d.hour > 12 ? d.hour - 12 : (d.hour == 0 ? 12 : d.hour);
+    final min = d.minute.toString().padLeft(2, '0');
+    final ampm = d.hour >= 12 ? 'PM' : 'AM';
+    final dateStr = '$day $mon $yr, $hour:$min $ampm';
 
-    return 'Hello $name,\n\n'
-        'Thank you for choosing $hName.\n\n'
-        'Your invoice $invoiceNo has been generated successfully.\n\n'
-        'Invoice Amount: ₹$amountStr\n\n'
-        'Thank you for visiting us.';
+    final buffer = StringBuffer();
+    buffer.writeln('🧾 *${hName.toUpperCase()}*');
+    buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━');
+    buffer.writeln('         *TAX INVOICE / बिल*');
+    buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━');
+    buffer.writeln('*बिल सं. (Bill No):* #$invoiceNo');
+    buffer.writeln('*दिनांक (Date):* $dateStr');
+    buffer.writeln('*ग्राहक (Guest):* $name');
+    if (roomOrTable != null && roomOrTable.trim().isNotEmpty) {
+      buffer.writeln('*स्थान (Room/Table):* $roomOrTable');
+    }
+    buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━');
+
+    if (items != null && items.isNotEmpty) {
+      buffer.writeln('*ऑर्डर विवरण (Items):*');
+      for (final it in items) {
+        buffer.writeln('• $it');
+      }
+      buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━');
+    }
+
+    buffer.writeln('*कुल राशि (Total Amount):* ₹$amountStr');
+    final pStatus = paymentStatus ?? 'PAID (पूर्ण भुगतान)';
+    final pMethod = (paymentMethod != null && paymentMethod.trim().isNotEmpty) ? ' ($paymentMethod)' : '';
+    buffer.writeln('*भुगतान स्थिति (Status):* ✅ *$pStatus$pMethod*');
+    buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━');
+    buffer.writeln('🙏 *धन्यवाद! दोबारा पधारें।*');
+    buffer.write('_Thank you for visiting! Have a wonderful day._');
+
+    return buffer.toString();
   }
 
   /// Direct WhatsApp launcher.
-  /// Validates input, formats message, opens WhatsApp deep-link.
+  /// Validates input, formats message as a real receipt, opens WhatsApp deep-link.
   static Future<bool> openWhatsApp({
     required BuildContext context,
     required String? rawPhone,
@@ -67,6 +105,11 @@ class WhatsAppHelper {
     required String invoiceNo,
     required double totalAmount,
     String? hotelName,
+    String? roomOrTable,
+    List<String>? items,
+    String? paymentMethod,
+    String? paymentStatus,
+    DateTime? date,
   }) async {
     final raw = rawPhone?.trim() ?? '';
     if (raw.isEmpty) {
@@ -97,6 +140,11 @@ class WhatsAppHelper {
       invoiceNo: invoiceNo,
       totalAmount: totalAmount,
       hotelName: hotelName,
+      roomOrTable: roomOrTable,
+      items: items,
+      paymentMethod: paymentMethod,
+      paymentStatus: paymentStatus,
+      date: date,
     );
 
     final encodedMessage = Uri.encodeComponent(message);
