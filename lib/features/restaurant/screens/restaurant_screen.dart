@@ -933,19 +933,28 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                   ),
                   const SizedBox(height: 16),
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text(
-                        'ऑर्डर और बिलिंग (Restaurant POS)',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, fontFamily: 'Inter'),
+                      const Expanded(
+                        child: Text(
+                          'ऑर्डर और बिलिंग (Restaurant POS)',
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, fontFamily: 'Inter'),
+                        ),
                       ),
+                      const SizedBox(width: 8),
                       TextButton.icon(
                         onPressed: () {
                           setState(() => _cart.clear());
                           Navigator.pop(ctx);
                         },
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
                         icon: const Icon(Icons.delete_outline, size: 16, color: AppColors.error),
-                        label: const Text('खाली करें (Clear)', style: TextStyle(color: AppColors.error, fontSize: 12)),
+                        label: const Text('खाली करें', style: TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.w600)),
                       ),
                     ],
                   ),
