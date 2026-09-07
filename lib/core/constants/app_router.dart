@@ -23,6 +23,7 @@ import 'package:hotel_erp/features/expenses/screens/expenses_screen.dart';
 import 'package:hotel_erp/features/staff/screens/staff_screen.dart';
 import 'package:hotel_erp/features/maintenance/screens/maintenance_screen.dart';
 import 'package:hotel_erp/features/reports/screens/reports_screen.dart';
+import 'package:hotel_erp/features/reports/screens/report_cycle_screen.dart';
 import 'package:hotel_erp/features/notifications/screens/notifications_screen.dart';
 import 'package:hotel_erp/features/settings/screens/settings_screen.dart';
 import 'package:hotel_erp/features/dashboard/screens/more_screen.dart';
@@ -156,6 +157,10 @@ class AppRouter {
           GoRoute(
             path: '/reports',
             builder: (context, state) => const ReportsScreen(),
+          ),
+          GoRoute(
+            path: '/report-cycle',
+            builder: (context, state) => const ReportCycleScreen(),
           ),
           GoRoute(
             path: '/notifications',

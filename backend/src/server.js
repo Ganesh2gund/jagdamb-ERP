@@ -21,6 +21,7 @@ import notificationRoutes from './routes/notifications.routes.js';
 import dashboardRoutes from './routes/dashboard.routes.js';
 import whatsappRoutes from './routes/whatsapp.routes.js';
 import settingsRoutes from './routes/settings.routes.js';
+import reportRoutes, { initReportCycle } from './routes/report.routes.js';
 
 const fastify = Fastify({
   logger: false, // Clean console output
@@ -84,6 +85,7 @@ fastify.register(notificationRoutes, { prefix: '/api/notifications' });
 fastify.register(dashboardRoutes, { prefix: '/api/dashboard' });
 fastify.register(whatsappRoutes, { prefix: '/api/whatsapp' });
 fastify.register(settingsRoutes, { prefix: '/api/settings' });
+fastify.register(reportRoutes, { prefix: '/api/report' });
 
 const PORT = process.env.PORT || 5000;
 const HOST = process.env.HOST || '0.0.0.0';
@@ -95,6 +97,7 @@ try {
   // Sync data store and hotel settings with MongoDB Atlas
   await store.init();
   await loadHotelSettingsFromDB();
+  await initReportCycle();
 
   await fastify.listen({ port: PORT, host: HOST });
   console.log(`\n======================================================`);

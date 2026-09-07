@@ -10,3 +10,4 @@ export { Expense } from './Expense.js';
 export { Inventory } from './Inventory.js';
 export { Notification } from './Notification.js';
 export { Invoice } from './Invoice.js';
+export { ReportCycle } from './ReportCycle.js';
