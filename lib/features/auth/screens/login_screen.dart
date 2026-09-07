@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -93,27 +94,80 @@ class _LoginScreenState extends State<LoginScreen>
                       child: Column(
                         children: [
                           Container(
-                            width: 80,
-                            height: 80,
+                            width: 130,
+                            height: 130,
                             decoration: BoxDecoration(
-                              color: AppColors.primarySurface,
-                              borderRadius: BorderRadius.circular(24),
+                              borderRadius: BorderRadius.circular(26),
+                              border: Border.all(color: const Color(0xFFD4AF37).withOpacity(0.4), width: 2),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.18),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
                             ),
-                            child: const Icon(
-                              Icons.hotel,
-                              color: AppColors.primary,
-                              size: 44,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(24),
+                              child: Transform.scale(
+                                scale: 1.18,
+                                child: kIsWeb
+                                    ? Image.network(
+                                        'hotel_logo.jpg',
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => Image.asset(
+                                          'assets/images/hotel_logo.jpg',
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, __, ___) => Container(
+                                            color: AppColors.primarySurface,
+                                            child: const Icon(
+                                              Icons.hotel,
+                                              color: AppColors.primary,
+                                              size: 50,
+                                            ),
+                                          ),
+                                        ),
+                                      )
+                                    : Image.asset(
+                                        'assets/images/hotel_logo.jpg',
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (_, __, ___) => Container(
+                                          color: AppColors.primarySurface,
+                                          child: const Icon(
+                                            Icons.hotel,
+                                            color: AppColors.primary,
+                                            size: 50,
+                                          ),
+                                        ),
+                                      ),
+                              ),
                             ),
                           ),
-                          const SizedBox(height: 16),
+                          const SizedBox(height: 14),
                           const Text(
-                            'Hotel ERP',
+                            'हॉटेल जगदंब पॅलेस',
                             style: TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.primary,
-                              fontFamily: 'Inter',
-                              letterSpacing: -0.5,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900,
+                              color: AppColors.textPrimary,
+                              letterSpacing: -0.3,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: AppColors.primarySurface,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: const Text(
+                              'HOTEL ERP SYSTEM',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.primary,
+                                letterSpacing: 1.0,
+                              ),
                             ),
                           ),
                         ],

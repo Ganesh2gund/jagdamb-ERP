@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -80,13 +81,46 @@ class _SplashScreenState extends State<SplashScreen>
                   width: 96,
                   height: 96,
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(28),
+                    borderRadius: BorderRadius.circular(24),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
                   ),
-                  child: const Icon(
-                    Icons.hotel,
-                    color: Colors.white,
-                    size: 52,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: kIsWeb
+                        ? Image.network(
+                            'hotel_logo.jpg',
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Image.asset(
+                              'assets/images/hotel_logo.jpg',
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) => Container(
+                                color: Colors.white.withOpacity(0.15),
+                                child: const Icon(
+                                  Icons.hotel,
+                                  color: Colors.white,
+                                  size: 52,
+                                ),
+                              ),
+                            ),
+                          )
+                        : Image.asset(
+                            'assets/images/hotel_logo.jpg',
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              color: Colors.white.withOpacity(0.15),
+                              child: const Icon(
+                                Icons.hotel,
+                                color: Colors.white,
+                                size: 52,
+                              ),
+                            ),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 28),
