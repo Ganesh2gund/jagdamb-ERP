@@ -23,11 +23,12 @@ class ApiClient {
   /// Default API base URL: Fastify runs on port 5000
   String get baseUrl {
     if (kIsWeb) {
-      return 'http://127.0.0.1:5000/api';
+      final host = Uri.base.host.isNotEmpty ? Uri.base.host : '127.0.0.1';
+      return 'http://$host:5000/api';
     }
     try {
       if (Platform.isAndroid) {
-        return 'http://10.0.2.2:5000/api';
+        return 'http://172.16.23.254:5000/api';
       }
     } catch (_) {
       // Fallback for non-supported platforms
