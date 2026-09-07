@@ -27,6 +27,17 @@ const fastify = Fastify({
   logger: false, // Clean console output
 });
 
+// Allow empty or blank JSON bodies gracefully without throwing FST_ERR_CTP_EMPTY_JSON_BODY
+fastify.addContentTypeParser('application/json', { parseAs: 'string' }, (req, body, done) => {
+  try {
+    const json = (body && body.trim().length > 0) ? JSON.parse(body) : {};
+    done(null, json);
+  } catch (err) {
+    err.statusCode = 400;
+    done(err, undefined);
+  }
+});
+
 // Register CORS for Flutter Web, Desktop, Mobile
 await fastify.register(cors, {
   origin: true,

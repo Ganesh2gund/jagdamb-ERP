@@ -66,6 +66,14 @@ class WhatsAppHelper {
 
     final buffer = StringBuffer();
     buffer.writeln('🧾 *${hName.toUpperCase()}*');
+    final hAddress = WebPrinter.hotelAddress.trim();
+    final hPhone = WebPrinter.hotelPhone.trim();
+    if (hAddress.isNotEmpty) {
+      buffer.writeln('📍 _${hAddress}_');
+    }
+    if (hPhone.isNotEmpty) {
+      buffer.writeln('📞 _फोन: ${hPhone}_');
+    }
     buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━');
     buffer.writeln('         *TAX INVOICE / बिल*');
     buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━');

@@ -29,7 +29,7 @@ class ReportRepository {
 
   Future<bool> scheduleCleanup() async {
     try {
-      final res = await _api.post('/report/schedule-cleanup');
+      final res = await _api.post('/report/schedule-cleanup', body: const {});
       return res['success'] == true;
     } catch (e) {
       return false;
@@ -38,7 +38,7 @@ class ReportRepository {
 
   Future<bool> cancelCleanup() async {
     try {
-      final res = await _api.post('/report/cancel-cleanup');
+      final res = await _api.post('/report/cancel-cleanup', body: const {});
       return res['success'] == true;
     } catch (e) {
       return false;
@@ -47,7 +47,7 @@ class ReportRepository {
 
   Future<bool> instantDelete() async {
     try {
-      final res = await _api.post('/report/instant-delete');
+      final res = await _api.post('/report/instant-delete', body: const {});
       return res['success'] == true;
     } catch (e) {
       return false;

@@ -92,7 +92,7 @@ class ApiClient {
         .post(
           uri,
           headers: _headers(),
-          body: body != null ? jsonEncode(body) : null,
+          body: jsonEncode(body ?? <String, dynamic>{}),
         )
         .timeout(const Duration(seconds: 10));
     return _handleResponse(response);
@@ -104,7 +104,7 @@ class ApiClient {
         .put(
           uri,
           headers: _headers(),
-          body: body != null ? jsonEncode(body) : null,
+          body: jsonEncode(body ?? <String, dynamic>{}),
         )
         .timeout(const Duration(seconds: 10));
     return _handleResponse(response);
