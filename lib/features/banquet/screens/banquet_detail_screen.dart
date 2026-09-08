@@ -107,7 +107,7 @@ class _BanquetDetailScreenState extends State<BanquetDetailScreen> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('बकाया राशि प्राप्त करें (Collect Payment)', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, fontFamily: 'Inter')),
+                  const Text('Collect Due Payment', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, fontFamily: 'Inter')),
                   IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(ctx, false)),
                 ],
               ),
@@ -119,13 +119,13 @@ class _BanquetDetailScreenState extends State<BanquetDetailScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('ग्राहक: ${b.customerName}', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                    Text('हॉल: ${b.hallName}', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.primary)),
+                    Text('Customer: ${b.customerName}', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                    Text('Hall: ${b.hallName}', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.primary)),
                   ],
                 ),
               ),
               const SizedBox(height: 14),
-              const Text('जमा की जाने वाली राशि (Amount)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+              const Text('Amount to Collect', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               TextField(
                 controller: amountCtrl,
@@ -140,7 +140,7 @@ class _BanquetDetailScreenState extends State<BanquetDetailScreen> {
                 ),
               ),
               const SizedBox(height: 14),
-              const Text('भुगतान का माध्यम (Payment Mode)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+              const Text('Payment Mode', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               Row(
                 children: ['Cash', 'UPI', 'Card'].map((m) {
@@ -188,7 +188,7 @@ class _BanquetDetailScreenState extends State<BanquetDetailScreen> {
                     Navigator.pop(ctx, true);
                   },
                   icon: const Icon(Icons.check_circle_outline, size: 20),
-                  label: const Text('भुगतान दर्ज करें (Submit Payment)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                  label: const Text('Confirm Payment', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                 ),
               ),
             ],
@@ -354,7 +354,7 @@ class _BanquetDetailScreenState extends State<BanquetDetailScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('बिल विवरण (Bill Details)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, fontFamily: 'Inter')),
+                      const Text('Bill Details', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, fontFamily: 'Inter')),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
@@ -362,7 +362,7 @@ class _BanquetDetailScreenState extends State<BanquetDetailScreen> {
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          isSettled ? 'पूर्ण भुगतान (Paid)' : 'बकाया (Pending)',
+                          isSettled ? 'Paid' : 'Pending',
                           style: TextStyle(
                             fontSize: 11,
                             fontWeight: FontWeight.w700,
@@ -373,19 +373,19 @@ class _BanquetDetailScreenState extends State<BanquetDetailScreen> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  InfoRow(label: 'हॉल बेस किराया (${b.slot})', value: AppFormatters.formatCurrency(b.hallRent)),
+                  InfoRow(label: 'Hall Base Tariff (${b.slot})', value: AppFormatters.formatCurrency(b.hallRent)),
                   if (b.foodTotal > 0)
                     InfoRow(
-                      label: 'केटरिंग भोजन (${b.expectedGuests} × ₹${b.pricePerPlate.toStringAsFixed(0)})',
+                      label: 'Catering Food (${b.expectedGuests} × ₹${b.pricePerPlate.toStringAsFixed(0)})',
                       value: AppFormatters.formatCurrency(b.foodTotal),
                     ),
                   if (b.extraCharges > 0)
-                    InfoRow(label: 'डेकोरेशन व अन्य खर्चे', value: AppFormatters.formatCurrency(b.extraCharges)),
+                    InfoRow(label: 'Decoration & Extras', value: AppFormatters.formatCurrency(b.extraCharges)),
                   const Divider(height: 16),
-                  InfoRow(label: 'कुल राशि (Grand Total)', value: AppFormatters.formatCurrency(b.grandTotal), valueColor: AppColors.primary),
-                  InfoRow(label: 'जमा एडवांस (Advance Paid)', value: AppFormatters.formatCurrency(b.advancePaid), valueColor: AppColors.success),
+                  InfoRow(label: 'Grand Total', value: AppFormatters.formatCurrency(b.grandTotal), valueColor: AppColors.primary),
+                  InfoRow(label: 'Advance Paid', value: AppFormatters.formatCurrency(b.advancePaid), valueColor: AppColors.success),
                   if (b.balanceDue > 0)
-                    InfoRow(label: 'बकाया राशि (Balance Due)', value: AppFormatters.formatCurrency(b.balanceDue), valueColor: const Color(0xFFDC2626)),
+                    InfoRow(label: 'Balance Due', value: AppFormatters.formatCurrency(b.balanceDue), valueColor: const Color(0xFFDC2626)),
 
                   if (b.balanceDue > 0 && b.status != 'cancelled') ...[
                     const SizedBox(height: 14),
@@ -401,7 +401,7 @@ class _BanquetDetailScreenState extends State<BanquetDetailScreen> {
                         onPressed: _collectPaymentSheet,
                         icon: const Icon(Icons.payments_outlined, size: 18),
                         label: Text(
-                          '💰 बकाया ₹${b.balanceDue.toStringAsFixed(0)} जमा करें (Collect)',
+                          '💰 Collect Due ₹${b.balanceDue.toStringAsFixed(0)}',
                           style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
                         ),
                       ),
@@ -419,7 +419,7 @@ class _BanquetDetailScreenState extends State<BanquetDetailScreen> {
               child: ElevatedButton.icon(
                 onPressed: _sendWhatsApp,
                 icon: const Icon(Icons.chat, size: 20),
-                label: const Text('WhatsApp Bill भेजें', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                label: const Text('Send WhatsApp Bill', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF25D366),
                   foregroundColor: Colors.white,

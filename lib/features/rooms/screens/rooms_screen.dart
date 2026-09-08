@@ -173,7 +173,7 @@ class _RoomsScreenState extends State<RoomsScreen> {
                                 if (!context.mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
-                                    content: Text('✨ Room ${room.number} की सफाई पूर्ण - अब उपलब्ध (Available) है!'),
+                                    content: Text('✨ Room ${room.number} cleaning completed - now Available!'),
                                     backgroundColor: AppColors.available,
                                     behavior: SnackBarBehavior.floating,
                                   ),
@@ -320,7 +320,7 @@ class _RoomCard extends StatelessWidget {
                   ElevatedButton.icon(
                     onPressed: onMarkCleaned,
                     icon: const Icon(Icons.check_circle, size: 13),
-                    label: const Text('सफाई हो गई', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                    label: const Text('Mark Clean', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.available,
                       foregroundColor: Colors.white,

@@ -114,7 +114,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           content: Row(children: [
             Icon(Icons.check_circle, color: Colors.white, size: 18),
             SizedBox(width: 10),
-            Text('✅ होटल सेटिंग्स सेव हो गई (Settings saved)!'),
+            Text('Settings saved successfully!'),
           ]),
           backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
@@ -140,7 +140,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Hotel Settings (सेटिंग्स)'),
+        title: const Text('Hotel Settings'),
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -148,22 +148,22 @@ class _SettingsScreenState extends State<SettingsScreen> {
           // ── Hotel Profile ──────────────────────────────────────
           _SectionHeader(
             icon: Icons.hotel,
-            title: 'Hotel Profile (होटल जानकारी)',
-            subtitle: 'Invoice aur receipts par yeh details print hogi',
+            title: 'Hotel Profile',
+            subtitle: 'These details will appear on invoices and receipts',
           ),
           const SizedBox(height: 8),
           _buildTextField(
             controller: _hotelNameCtrl,
-            label: 'Hotel Name (होटल का नाम)',
+            label: 'Hotel Name',
             icon: Icons.hotel,
             hint: 'e.g. Hotel Grand Palace',
           ),
           const SizedBox(height: 10),
           _buildTextField(
             controller: _hotelAddressCtrl,
-            label: 'Address (पता)',
+            label: 'Address',
             icon: Icons.location_on,
-            hint: 'Hotel ka address',
+            hint: 'Enter hotel address',
             maxLines: 2,
           ),
           const SizedBox(height: 10),
@@ -263,7 +263,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     )
                   : const Icon(Icons.save, size: 20),
               label: Text(
-                _isSaving ? 'Saving...' : '💾 Save Settings (सेव करें)',
+                _isSaving ? 'Saving...' : 'Save Settings',
                 style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
               ),
               style: ElevatedButton.styleFrom(

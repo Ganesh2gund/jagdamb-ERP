@@ -12,7 +12,8 @@ import '../../../widgets/whatsapp_button.dart';
 
 class CheckOutScreen extends StatefulWidget {
   final String? bookingId;
-  const CheckOutScreen({super.key, this.bookingId});
+  final String? roomId;
+  const CheckOutScreen({super.key, this.bookingId, this.roomId});
 
   @override
   State<CheckOutScreen> createState() => _CheckOutScreenState();
@@ -28,6 +29,9 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
   double _discount = 0;
   bool _settleRemainingBalance = true;
   String _paymentMethod = 'Cash';
+  // For direct room release (when room is occupied but no booking record exists)
+  Room? _occupiedRoomForRelease;
+  bool _isReleasingRoom = false;
 
   @override
   void initState() {
@@ -36,9 +40,12 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
   }
 
   Future<void> _load() async {
-    final repo = context.read<BookingRepository>();
-    if (widget.bookingId != null) {
-      final b = await repo.getBookingById(widget.bookingId!);
+    final bookingRepo = context.read<BookingRepository>();
+    final roomRepo = context.read<RoomRepository>();
+
+    // Step 1: If bookingId is provided, try to find by ID first
+    if (widget.bookingId != null && widget.bookingId!.isNotEmpty) {
+      final b = await bookingRepo.getBookingById(widget.bookingId!);
       if (b != null) {
         if (!mounted) return;
         setState(() {
@@ -50,9 +57,46 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
       }
     }
 
-    final checkedIn = await repo.getBookingsByStatus(BookingStatus.checkedIn);
-    final checkedOut = await repo.getBookingsByStatus(BookingStatus.checkedOut);
-    final upcoming = await repo.getBookingsByStatus(BookingStatus.upcoming);
+    // Step 2: If roomId provided, search all active bookings by room
+    if (widget.roomId != null && widget.roomId!.isNotEmpty) {
+      final allBookings = await bookingRepo.getBookings();
+      final roomId = widget.roomId!.toLowerCase();
+      // Find any active booking (checkedIn or upcoming/confirmed) for this room
+      final roomBooking = allBookings.where((b) {
+        if (b.status == BookingStatus.checkedOut || b.status == BookingStatus.cancelled) return false;
+        final bRoomId = b.roomId.toLowerCase();
+        final bRoomNum = b.roomNumber.toLowerCase();
+        return bRoomId == roomId || bRoomNum == roomId ||
+               bRoomId == 'r$roomId' || 'r$bRoomNum' == roomId ||
+               bRoomNum == roomId.replaceFirst('r', '');
+      }).toList();
+
+      if (roomBooking.isNotEmpty) {
+        if (!mounted) return;
+        setState(() {
+          _selectedBooking = roomBooking.first;
+          _step = 1;
+          _isLoading = false;
+        });
+        return;
+      }
+
+      // Step 3: No booking found but roomId given — load room for direct release
+      final room = await roomRepo.getRoomById(widget.roomId!);
+      if (room != null && room.status == RoomStatus.occupied) {
+        if (!mounted) return;
+        setState(() {
+          _occupiedRoomForRelease = room;
+          _isLoading = false;
+        });
+        return;
+      }
+    }
+
+    // Step 4: Default — load all checkedIn bookings for list view
+    final checkedIn = await bookingRepo.getBookingsByStatus(BookingStatus.checkedIn);
+    final checkedOut = await bookingRepo.getBookingsByStatus(BookingStatus.checkedOut);
+    final upcoming = await bookingRepo.getBookingsByStatus(BookingStatus.upcoming);
 
     if (!mounted) return;
     setState(() {
@@ -61,6 +105,59 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
       _upcomingBookings = upcoming;
       _isLoading = false;
     });
+  }
+
+  /// Direct room release — for rooms stuck as 'occupied' with no valid booking
+  Future<void> _directReleaseRoom() async {
+    if (_occupiedRoomForRelease == null) return;
+    setState(() => _isReleasingRoom = true);
+    final roomRepo = context.read<RoomRepository>();
+    await roomRepo.checkOut(_occupiedRoomForRelease!.id);
+    await roomRepo.updateRoomStatus(_occupiedRoomForRelease!.id, RoomStatus.available);
+    if (!mounted) return;
+    setState(() => _isReleasingRoom = false);
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        contentPadding: const EdgeInsets.all(24),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 72, height: 72,
+              decoration: BoxDecoration(
+                color: AppColors.success.withOpacity(0.12),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.check_circle, color: AppColors.success, size: 48),
+            ),
+            const SizedBox(height: 18),
+            Text(
+              'Room ${_occupiedRoomForRelease!.number} Released!',
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800, fontFamily: 'Inter'),
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Room is now marked as Available. No billing record was generated.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: AppColors.textSecondary, fontFamily: 'Inter'),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              height: 46,
+              child: ElevatedButton(
+                onPressed: () { Navigator.pop(ctx); context.go('/rooms'); },
+                child: const Text('Go to Rooms', style: TextStyle(fontWeight: FontWeight.w700)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   double get _roomCharge => _selectedBooking?.totalAmount ?? 0;
@@ -119,7 +216,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
             ),
             const SizedBox(height: 18),
             const Text(
-              'चेकआउट सफल रहा!\nCheck-out Successful!',
+              'Check-out Successful!',
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 20,
@@ -142,7 +239,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Guest / अतिथि:', style: TextStyle(fontSize: 13, color: AppColors.textSecondary, fontFamily: 'Inter')),
+                      const Text('Guest:', style: TextStyle(fontSize: 13, color: AppColors.textSecondary, fontFamily: 'Inter')),
                       Text(b.guestName, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, fontFamily: 'Inter')),
                     ],
                   ),
@@ -150,7 +247,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Room / कमरा:', style: TextStyle(fontSize: 13, color: AppColors.textSecondary, fontFamily: 'Inter')),
+                      const Text('Room:', style: TextStyle(fontSize: 13, color: AppColors.textSecondary, fontFamily: 'Inter')),
                       Text('Room ${b.roomNumber}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: AppColors.primary, fontFamily: 'Inter')),
                     ],
                   ),
@@ -158,7 +255,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('Total Bill / कुल बिल:', style: TextStyle(fontSize: 13, color: AppColors.textSecondary, fontFamily: 'Inter')),
+                      const Text('Total Bill:', style: TextStyle(fontSize: 13, color: AppColors.textSecondary, fontFamily: 'Inter')),
                       Text(AppFormatters.formatCurrency(_grandTotal), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: AppColors.success, fontFamily: 'Inter')),
                     ],
                   ),
@@ -169,7 +266,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                       SizedBox(width: 6),
                       Expanded(
                         child: Text(
-                          'कमरा अब खाली है और सफाई के लिए तैयार है।',
+                          'Room is now vacant and ready for housekeeping.',
                           style: TextStyle(fontSize: 12, color: AppColors.info, fontWeight: FontWeight.w600, fontFamily: 'Inter'),
                         ),
                       ),
@@ -190,7 +287,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                 'Room Stay (${b.nights} day(s)) : ₹${_grandTotal.toStringAsFixed(0)}',
               ],
               paymentMethod: 'Direct',
-              paymentStatus: 'PAID (पूर्ण भुगतान)',
+              paymentStatus: 'PAID IN FULL',
             ),
             const SizedBox(height: 10),
             SizedBox(
@@ -202,7 +299,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                   context.go('/billing/${b.id}');
                 },
                 icon: const Icon(Icons.receipt_long, size: 18),
-                label: const Text('📄 बिल देखें (View Invoice)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                label: const Text('View Invoice', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
                 style: OutlinedButton.styleFrom(
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
@@ -220,7 +317,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                 style: OutlinedButton.styleFrom(
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
-                child: const Text('कमरे देखें (Go to Rooms)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+                child: const Text('Go to Rooms', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
               ),
             ),
           ],
@@ -248,10 +345,10 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
       child: Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
-          title: const Text('Check-out & Bill (चेकआउट और बिल)'),
+          title: const Text('Check-out & Bill'),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            tooltip: 'वापस जाएं (Back)',
+            tooltip: 'Back',
             onPressed: () {
               if (_step == 1 && widget.bookingId == null) {
                 setState(() {
@@ -270,6 +367,86 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
   }
 
   Widget _buildSelectGuest() {
+    // ── Direct Room Release (orphaned occupied room) ──
+    if (_occupiedRoomForRelease != null) {
+      return SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(color: AppColors.error.withOpacity(0.35)),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 4))],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 72, height: 72,
+                decoration: BoxDecoration(color: AppColors.error.withOpacity(0.1), shape: BoxShape.circle),
+                child: const Icon(Icons.warning_amber_rounded, size: 40, color: AppColors.error),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Room ${_occupiedRoomForRelease!.number} — No Booking Found',
+                textAlign: TextAlign.center,
+                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, fontFamily: 'Inter'),
+              ),
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: AppColors.error.withOpacity(0.06),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.error.withOpacity(0.15)),
+                ),
+                child: const Text(
+                  'This room is marked as Occupied but no active booking record was found. '
+                  'This usually happens when a booking was deleted manually or created without check-in. '
+                  'Use the button below to release the room directly.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12.5, color: AppColors.textSecondary, fontFamily: 'Inter', height: 1.5),
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity, height: 50,
+                child: ElevatedButton.icon(
+                  onPressed: _isReleasingRoom ? null : _directReleaseRoom,
+                  icon: _isReleasingRoom
+                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.lock_open, size: 20),
+                  label: Text(
+                    _isReleasingRoom ? 'Releasing...' : 'Release Room ${_occupiedRoomForRelease!.number} → Available',
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.error,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity, height: 44,
+                child: OutlinedButton.icon(
+                  onPressed: () => context.go('/rooms'),
+                  icon: const Icon(Icons.hotel, size: 18),
+                  label: const Text('Back to Rooms'),
+                  style: OutlinedButton.styleFrom(
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -304,13 +481,13 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                   ),
                   const SizedBox(height: 16),
                   const Text(
-                    'कोई भी गेस्ट अभी चेक-इन नहीं है\n(No Checked-In Guests Currently)',
+                    'No Checked-In Guests Currently',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, fontFamily: 'Inter', height: 1.3),
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'चेकआउट करने के लिए पहले गेस्ट का चेक-इन होना आवश्यक है।\nTo perform a check-out, guests must be checked in first.',
+                    'Guests must be checked in first to perform a check-out.',
                     textAlign: TextAlign.center,
                     style: TextStyle(fontSize: 13, color: AppColors.textSecondary, fontFamily: 'Inter', height: 1.4),
                   ),
@@ -333,7 +510,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  '${_upcomingBookings.length} बुकिंग्स चेक-इन के लिए तैयार हैं:',
+                                  '${_upcomingBookings.length} booking(s) ready for check-in:',
                                   style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.primary),
                                 ),
                               ),
@@ -346,7 +523,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                             child: ElevatedButton.icon(
                               onPressed: () => context.go('/check-in'),
                               icon: const Icon(Icons.login, size: 18),
-                              label: const Text('🛬 गेस्ट चेक-इन करें (Go to Check-in)', style: TextStyle(fontWeight: FontWeight.w700)),
+                              label: const Text('Go to Check-in', style: TextStyle(fontWeight: FontWeight.w700)),
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: AppColors.primary,
                                 foregroundColor: Colors.white,
@@ -401,7 +578,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      'चेकआउट के लिए उपलब्ध गेस्ट (${_checkedInBookings.length}):',
+                      'Checked-in Guests (${_checkedInBookings.length}):',
                       style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, fontFamily: 'Inter'),
                     ),
                   ),
@@ -446,12 +623,12 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                             Text(b.guestName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, fontFamily: 'Inter')),
                             const SizedBox(height: 3),
                             Text(
-                              '${b.roomType} • ${b.nights} Day(s) • फ़ोन: ${b.guestPhone}',
+                              '${b.roomType} • ${b.nights} Day(s) • Phone: ${b.guestPhone}',
                               style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontFamily: 'Inter'),
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'कुल: ₹${b.totalAmount.toStringAsFixed(0)} | बाकी: ₹${pending.toStringAsFixed(0)}',
+                              'Total: ₹${b.totalAmount.toStringAsFixed(0)} | Due: ₹${pending.toStringAsFixed(0)}',
                               style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
@@ -470,7 +647,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         ),
-                        child: const Text('चेकआउट करें', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                        child: const Text('Check-out', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
                       ),
                     ],
                   ),
@@ -488,7 +665,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    'हाल ही में चेकआउट (Recent Check-outs):',
+                    'Recent Check-outs:',
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, fontFamily: 'Inter'),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -525,7 +702,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                             Text(b.guestName, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, fontFamily: 'Inter')),
                             const SizedBox(height: 2),
                             Text(
-                              'Room ${b.roomNumber} • कुल बिल: ₹${b.totalAmount.toStringAsFixed(0)} (Paid)',
+                              'Room ${b.roomNumber} • Total Bill: ₹${b.totalAmount.toStringAsFixed(0)} (Paid)',
                               style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontFamily: 'Inter'),
                             ),
                           ],
@@ -534,7 +711,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                       OutlinedButton.icon(
                         onPressed: () => context.go('/billing/${b.id}'),
                         icon: const Icon(Icons.receipt_long, size: 14),
-                        label: const Text('बिल देखें', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                        label: const Text('View Bill', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -588,9 +765,9 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                     children: [
                       Text(b.guestName, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, fontFamily: 'Inter')),
                       const SizedBox(height: 3),
-                      Text('फ़ोन: ${b.guestPhone}', style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, fontFamily: 'Inter')),
+                      Text('Phone: ${b.guestPhone}', style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, fontFamily: 'Inter')),
                       Text(
-                        'रुकने का समय: ${b.nights} दिन (${AppFormatters.formatDate(b.checkIn)} से ${AppFormatters.formatDate(b.checkOut)})',
+                        'Stay Duration: ${b.nights} day(s) (${AppFormatters.formatDate(b.checkIn)} to ${AppFormatters.formatDate(b.checkOut)})',
                         style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontFamily: 'Inter'),
                       ),
                     ],
@@ -609,7 +786,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('फाइनल बिल (Room Bill)', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, fontFamily: 'Inter')),
+                    const Text('Final Bill (Room Tariff)', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, fontFamily: 'Inter')),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(color: AppColors.primarySurface, borderRadius: BorderRadius.circular(6)),
@@ -622,7 +799,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
 
                 // Room Charge Row
                 _BillLine(
-                  label: 'कमरे का किराया (${b.nights} दिन × ₹${pricePerNight.toStringAsFixed(0)})',
+                  label: 'Room Tariff (${b.nights} day(s) × ₹${pricePerNight.toStringAsFixed(0)})',
                   amount: _roomCharge,
                   isBold: true,
                 ),
@@ -633,7 +810,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                 Row(
                   children: [
                     const Expanded(
-                      child: Text('छूट / Discount (%):', style: TextStyle(fontSize: 13, color: AppColors.textSecondary, fontFamily: 'Inter')),
+                      child: Text('Discount (%):', style: TextStyle(fontSize: 13, color: AppColors.textSecondary, fontFamily: 'Inter')),
                     ),
                     SizedBox(
                       width: 80,
@@ -652,13 +829,13 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                   ],
                 ),
                 if (_discount > 0)
-                  _BillLine(label: 'छूट की रकम (Discount)', amount: -_discountAmt, isRed: true),
+                  _BillLine(label: 'Discount Amount', amount: -_discountAmt, isRed: true),
 
                 const Divider(thickness: 2, height: 24),
 
                 // Grand Total
                 _BillLine(
-                  label: 'कुल बिल (Grand Total)',
+                  label: 'Grand Total',
                   amount: _grandTotal,
                   isBold: true,
                   isLarge: true,
@@ -668,7 +845,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
 
                 // Paid & Pending
                 _BillLine(
-                  label: 'पहले से जमा (Advance Paid)',
+                  label: 'Advance Paid',
                   amount: _paid,
                   valueColor: AppColors.success,
                   isBold: true,
@@ -676,7 +853,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
 
                 if (_pending > 0)
                   _BillLine(
-                    label: 'बाकी रकम (Balance Due to Collect)',
+                    label: 'Balance Due to Collect',
                     amount: _pending,
                     valueColor: AppColors.error,
                     isBold: true,
@@ -697,7 +874,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                         SizedBox(width: 8),
                         Flexible(
                           child: Text(
-                            'पूरा भुगतान पहले ही हो चुका है (No Due)',
+                            'Full payment received (No Due)',
                             style: TextStyle(color: AppColors.success, fontWeight: FontWeight.w700, fontSize: 13),
                           ),
                         ),
@@ -721,7 +898,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
-                          'रुपये प्राप्त करने की पुष्टि (Collect ₹${_pending.toStringAsFixed(0)})',
+                          'Collect Balance (₹${_pending.toStringAsFixed(0)})',
                           style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, fontFamily: 'Inter'),
                         ),
                       ),
@@ -732,17 +909,17 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                     value: _settleRemainingBalance,
                     onChanged: (v) => setState(() => _settleRemainingBalance = v ?? true),
                     title: Text(
-                      'हाँ, बाकी ₹${_pending.toStringAsFixed(0)} प्राप्त हो गए (Mark as Paid)',
+                      'Yes, collected balance ₹${_pending.toStringAsFixed(0)} (Mark as Paid)',
                       style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.success),
                     ),
-                    subtitle: const Text('चेकआउट के साथ ही पेमेंट अपने-आप पूरी हो जाएगी', style: TextStyle(fontSize: 11)),
+                    subtitle: const Text('Payment will be fully settled upon checkout', style: TextStyle(fontSize: 11)),
                     controlAffinity: ListTileControlAffinity.leading,
                     contentPadding: EdgeInsets.zero,
                     activeColor: AppColors.success,
                   ),
                   if (_settleRemainingBalance) ...[
                     const SizedBox(height: 8),
-                    const Text('भुगतान का माध्यम (Payment Method):', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                    const Text('Payment Method:', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                     const SizedBox(height: 6),
                     Row(
                       children: ['Cash', 'UPI / QR', 'Card'].map((m) {
@@ -772,7 +949,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
               onPressed: _confirmCheckOut,
               icon: const Icon(Icons.logout, size: 22),
               label: const Text(
-                '✅ Confirm Check-out (चेकआउट पूरा करें)',
+                'Confirm Check-out',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 0.5),
               ),
               style: ElevatedButton.styleFrom(
@@ -792,7 +969,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
             child: OutlinedButton.icon(
               onPressed: () => context.go('/billing/${b.id}'),
               icon: const Icon(Icons.receipt_long, size: 18),
-              label: const Text('बिल देखें / प्रिंट करें (View & Print Invoice)', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+              label: const Text('View & Print Invoice', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
               style: OutlinedButton.styleFrom(
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
@@ -803,7 +980,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
           if (widget.bookingId == null)
             TextButton(
               onPressed: () => setState(() { _selectedBooking = null; _step = 0; }),
-              child: const Text('← गेस्ट सूची पर वापस जाएं (Back to List)', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+              child: const Text('← Back to Guest List', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
             ),
         ],
       ),

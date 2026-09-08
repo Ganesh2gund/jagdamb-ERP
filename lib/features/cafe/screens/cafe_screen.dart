@@ -105,7 +105,7 @@ class _CafeScreenState extends State<CafeScreen>
     ScaffoldMessenger.of(context).hideCurrentSnackBar();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('✓ "${item.name}" ऑर्डर में जोड़ा गया'),
+        content: Text('✓ "${item.name}" added to order'),
         duration: const Duration(milliseconds: 900),
         behavior: SnackBarBehavior.floating,
         backgroundColor: _amberDark,
@@ -165,7 +165,7 @@ class _CafeScreenState extends State<CafeScreen>
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('ऑर्डर सेव करने में त्रुटि हुई'),
+          content: Text('Failed to save order'),
           backgroundColor: AppColors.error,
         ),
       );
@@ -198,7 +198,7 @@ class _CafeScreenState extends State<CafeScreen>
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  'ऑर्डर सफल! (Order Completed)',
+                  'Order Completed!',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                 ),
                 const SizedBox(height: 4),
@@ -218,7 +218,7 @@ class _CafeScreenState extends State<CafeScreen>
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('कुल राशि (Total):', style: TextStyle(fontWeight: FontWeight.w600)),
+                          const Text('Total Amount:', style: TextStyle(fontWeight: FontWeight.w600)),
                           Text(
                             AppFormatters.formatCurrency(order.totalAmount),
                             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primary),
@@ -229,7 +229,7 @@ class _CafeScreenState extends State<CafeScreen>
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('भुगतान माध्यम:', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                          const Text('Payment Method:', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                           Text('${order.paymentMethod} (Paid)', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.success)),
                         ],
                       ),
@@ -253,7 +253,7 @@ class _CafeScreenState extends State<CafeScreen>
                         children: [
                           Icon(Icons.chat, size: 16, color: Color(0xFF25D366)),
                           SizedBox(width: 6),
-                          Text('WhatsApp पर बिल भेजें:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF15803D))),
+                          Text('Send Bill via WhatsApp:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF15803D))),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -265,7 +265,7 @@ class _CafeScreenState extends State<CafeScreen>
                           filled: true,
                           fillColor: Colors.white,
                           contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                          hintText: '10 अंकों का WhatsApp नंबर',
+                          hintText: '10-digit WhatsApp number',
                           prefixIcon: const Icon(Icons.phone, size: 16, color: Color(0xFF25D366)),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF25D366))),
                           enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
@@ -281,7 +281,7 @@ class _CafeScreenState extends State<CafeScreen>
                             if (ph.isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('कृपया 10 अंकों का WhatsApp नंबर दर्ज करें'),
+                                  content: Text('Please enter a 10-digit WhatsApp number'),
                                   backgroundColor: Colors.orange,
                                   behavior: SnackBarBehavior.floating,
                                 ),
@@ -302,7 +302,7 @@ class _CafeScreenState extends State<CafeScreen>
                             );
                           },
                           icon: const Icon(Icons.chat, size: 18, color: Colors.white),
-                          label: const Text('Send WhatsApp (व्हाट्सएप भेजें)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                          label: const Text('Send Bill via WhatsApp', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF25D366),
                             elevation: 1,
@@ -323,7 +323,7 @@ class _CafeScreenState extends State<CafeScreen>
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                     onPressed: () => Navigator.pop(ctx),
-                    child: const Text('नया ऑर्डर (New Order)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    child: const Text('New Order', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -354,7 +354,7 @@ class _CafeScreenState extends State<CafeScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'कैफे (Cafe Jagdamb)',
+                  'Cafe Jagdamb',
                   style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                 ),
                 Text(
@@ -374,15 +374,15 @@ class _CafeScreenState extends State<CafeScreen>
           tabs: [
             Tab(
               icon: const Icon(Icons.point_of_sale_rounded, size: 20),
-              text: _cart.isEmpty ? 'फास्ट बिलिंग (POS)' : 'फास्ट बिलिंग ($_cartItemCount)',
+              text: _cart.isEmpty ? 'Fast POS' : 'POS (${_cartItemCount})',
             ),
             const Tab(
               icon: Icon(Icons.menu_book_rounded, size: 20),
-              text: 'मेन्यू (Menu)',
+              text: 'Menu',
             ),
             Tab(
               icon: const Icon(Icons.receipt_long_rounded, size: 20),
-              text: 'बिल (${_orders.length})',
+              text: 'Bills (${_orders.length})',
             ),
           ],
         ),
@@ -425,7 +425,7 @@ class _CafeScreenState extends State<CafeScreen>
               TextField(
                 onChanged: (val) => setState(() => _searchQuery = val),
                 decoration: InputDecoration(
-                  hintText: 'कॉफ़ी, स्नैक्स खोजें (Search items)...',
+                  hintText: 'Search coffee, snacks, items...',
                   prefixIcon: const Icon(Icons.search_rounded, size: 20, color: AppColors.textSecondary),
                   suffixIcon: _searchQuery.isNotEmpty
                       ? IconButton(
@@ -452,7 +452,7 @@ class _CafeScreenState extends State<CafeScreen>
                     Padding(
                       padding: const EdgeInsets.only(right: 8),
                       child: ChoiceChip(
-                        label: const Text('सभी (All)'),
+                        label: const Text('All'),
                         selected: _selectedCategory.isEmpty,
                         selectedColor: _amberLight,
                         labelStyle: TextStyle(
@@ -499,7 +499,7 @@ class _CafeScreenState extends State<CafeScreen>
                     children: [
                       Icon(Icons.coffee_maker_outlined, size: 56, color: AppColors.textSecondary.withOpacity(0.4)),
                       const SizedBox(height: 12),
-                      const Text('कोई आइटम नहीं मिला', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+                      const Text('No items found', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
                     ],
                   ),
                 )
@@ -521,7 +521,7 @@ class _CafeScreenState extends State<CafeScreen>
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: Text(
-                'खोज परिणाम: ${filtered.length} आइटम',
+                'Search Results: ${filtered.length} items',
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textSecondary),
               ),
             )
@@ -609,7 +609,7 @@ class _CafeScreenState extends State<CafeScreen>
                   ),
                   const Spacer(),
                   Text(
-                    '${entry.value.length} आइटम',
+                    '${entry.value.length} items',
                     style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _amberDark),
                   ),
                 ],
@@ -732,7 +732,7 @@ class _CafeScreenState extends State<CafeScreen>
                             Icon(Icons.add_rounded, size: 15, color: _amberDark),
                             SizedBox(width: 4),
                             Text(
-                              'जोड़ें',
+                              'Add',
                               style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: _amberDark),
                             ),
                           ],
@@ -798,16 +798,16 @@ class _CafeScreenState extends State<CafeScreen>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '$_cartItemCount आइटम | ${AppFormatters.formatCurrency(_cartTotal)}',
+                  '$_cartItemCount items | ${AppFormatters.formatCurrency(_cartTotal)}',
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: _amberDark),
                 ),
-                const Text('काउंटर बिलिंग (Express)', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                const Text('Express Counter Billing', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
               ],
             ),
             const Spacer(),
             ElevatedButton.icon(
               icon: const Icon(Icons.shopping_bag_outlined, size: 18),
-              label: const Text('चेकआउट करें', style: TextStyle(fontWeight: FontWeight.bold)),
+              label: const Text('Checkout', style: TextStyle(fontWeight: FontWeight.bold)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _amberPrimary,
                 foregroundColor: Colors.white,
@@ -854,7 +854,7 @@ class _CafeScreenState extends State<CafeScreen>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    'ऑर्डर सारांश (Cart Summary)',
+                    'Cart Summary',
                     style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                   ),
                   TextButton(
@@ -862,7 +862,7 @@ class _CafeScreenState extends State<CafeScreen>
                       _clearCart();
                       Navigator.pop(ctx);
                     },
-                    child: const Text('खाली करें', style: TextStyle(color: AppColors.error, fontSize: 13)),
+                    child: const Text('Clear Cart', style: TextStyle(color: AppColors.error, fontSize: 13)),
                   ),
                 ],
               ),
@@ -930,8 +930,8 @@ class _CafeScreenState extends State<CafeScreen>
               TextField(
                 controller: _guestNameController,
                 decoration: InputDecoration(
-                  labelText: 'ग्राहक का नाम (वैकल्पिक / Optional)',
-                  hintText: 'उदा. Rahul Sharma / Walk-in Guest',
+                  labelText: 'Customer Name (Optional)',
+                  hintText: 'e.g. Rahul Sharma / Walk-in Guest',
                   prefixIcon: const Icon(Icons.person_outline, size: 20),
                   filled: true,
                   fillColor: AppColors.surfaceVariant.withOpacity(0.4),
@@ -941,7 +941,7 @@ class _CafeScreenState extends State<CafeScreen>
               ),
               const SizedBox(height: 14),
               // Payment method selector
-              const Text('भुगतान माध्यम (Payment Method):', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+              const Text('Payment Method:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
               const SizedBox(height: 8),
               Row(
                 children: ['Cash', 'UPI', 'Card'].map((pm) {
@@ -983,7 +983,7 @@ class _CafeScreenState extends State<CafeScreen>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('कुल देय राशि:', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
+                  const Text('Total Payable:', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600)),
                   Text(
                     AppFormatters.formatCurrency(_cartTotal),
                     style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: _amberDark),
@@ -996,7 +996,7 @@ class _CafeScreenState extends State<CafeScreen>
                 height: 48,
                 child: ElevatedButton.icon(
                   icon: const Icon(Icons.check_circle_rounded, size: 20),
-                  label: const Text('बिल बनाएं व भुगतान लें (Settle & Print)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                  label: const Text('Settle & Print Bill', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _amberPrimary,
                     foregroundColor: Colors.white,
@@ -1033,7 +1033,7 @@ class _CafeScreenState extends State<CafeScreen>
         backgroundColor: _amberPrimary,
         foregroundColor: Colors.white,
         icon: const Icon(Icons.add_rounded),
-        label: const Text('नया आइटम जोड़ें', style: TextStyle(fontWeight: FontWeight.bold)),
+        label: const Text('Add Item', style: TextStyle(fontWeight: FontWeight.bold)),
         onPressed: () => _openDishDialog(),
       ),
       body: Column(
@@ -1045,7 +1045,7 @@ class _CafeScreenState extends State<CafeScreen>
             child: TextField(
               onChanged: (val) => setState(() => _menuSearchQuery = val),
               decoration: InputDecoration(
-                hintText: 'मेन्यू में आइटम खोजें (Search menu)...',
+                hintText: 'Search menu items...',
                 prefixIcon: const Icon(Icons.search_rounded, size: 20, color: AppColors.textSecondary),
                 suffixIcon: _menuSearchQuery.isNotEmpty
                     ? IconButton(
@@ -1072,18 +1072,18 @@ class _CafeScreenState extends State<CafeScreen>
               children: [
                 const Icon(Icons.category_outlined, size: 18, color: _amberDark),
                 const SizedBox(width: 8),
-                const Text('श्रेणियां (Categories):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                const Text('Categories:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                 const Spacer(),
                 TextButton.icon(
                   icon: const Icon(Icons.add, size: 16, color: _amberDark),
-                  label: const Text('नई श्रेणी', style: TextStyle(color: _amberDark, fontWeight: FontWeight.bold, fontSize: 12)),
+                  label: const Text('New Category', style: TextStyle(color: _amberDark, fontWeight: FontWeight.bold, fontSize: 12)),
                   onPressed: _openAddCategoryDialog,
                 ),
               ],
             ),
           ),
 
-          // Horizontal Category list with 'सभी (All)' and category chips
+          // Horizontal Category list with 'All' and category chips
           Container(
             height: 44,
             color: AppColors.surface,
@@ -1094,7 +1094,7 @@ class _CafeScreenState extends State<CafeScreen>
                 Padding(
                   padding: const EdgeInsets.only(right: 8, bottom: 6),
                   child: ChoiceChip(
-                    label: const Text('सभी (All)'),
+                    label: const Text('All'),
                     selected: _menuSelectedCategory.isEmpty,
                     selectedColor: _amberLight,
                     labelStyle: TextStyle(
@@ -1141,7 +1141,7 @@ class _CafeScreenState extends State<CafeScreen>
                       children: [
                         Icon(Icons.restaurant_menu_outlined, size: 48, color: AppColors.textSecondary.withOpacity(0.4)),
                         const SizedBox(height: 10),
-                        const Text('कोई आइटम नहीं मिला', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
+                        const Text('No items found', style: TextStyle(color: AppColors.textSecondary, fontSize: 14)),
                       ],
                     ),
                   )
@@ -1161,7 +1161,7 @@ class _CafeScreenState extends State<CafeScreen>
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: Text(
-                'खोज परिणाम: ${filtered.length} आइटम मिले',
+                'Search Results: ${filtered.length} items found',
                 style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textSecondary),
               ),
             )
@@ -1248,7 +1248,7 @@ class _CafeScreenState extends State<CafeScreen>
                   ),
                   const Spacer(),
                   Text(
-                    '${entry.value.length} आइटम',
+                    '${entry.value.length} items',
                     style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: _amberDark),
                   ),
                 ],
@@ -1356,17 +1356,17 @@ class _CafeScreenState extends State<CafeScreen>
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('नई श्रेणी जोड़ें (Add Category)', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        title: const Text('Add Category', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
         content: TextField(
           controller: controller,
           autofocus: true,
           decoration: const InputDecoration(
-            hintText: 'उदा. Cold Coffee, Shakes...',
+            hintText: 'e.g. Cold Coffee, Shakes...',
             border: OutlineInputBorder(),
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('रद्द करें')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: _amberPrimary),
             onPressed: () async {
@@ -1378,7 +1378,7 @@ class _CafeScreenState extends State<CafeScreen>
                 _loadData();
               }
             },
-            child: const Text('जोड़ें', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: const Text('Add', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -1389,10 +1389,10 @@ class _CafeScreenState extends State<CafeScreen>
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('क्या "$name" श्रेणी हटाना चाहते हैं?', style: const TextStyle(fontSize: 16)),
-        content: const Text('इस श्रेणी के सभी आइटम भी मेन्यू से हट जाएंगे।'),
+        title: Text('Delete "$name" category?', style: const TextStyle(fontSize: 16)),
+        content: const Text('All items in this category will also be removed from menu.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('नहीं')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () async {
@@ -1401,7 +1401,7 @@ class _CafeScreenState extends State<CafeScreen>
               await repo.deleteCategory(name);
               _loadData();
             },
-            child: const Text('हटाएं', style: TextStyle(color: Colors.white)),
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -1419,7 +1419,7 @@ class _CafeScreenState extends State<CafeScreen>
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDialogState) => AlertDialog(
-          title: Text(item == null ? 'नया कैफे आइटम (Add Item)' : 'आइटम बदलें (Edit Item)',
+          title: Text(item == null ? 'Add Cafe Item' : 'Edit Item',
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           content: SingleChildScrollView(
             child: Column(
@@ -1427,18 +1427,18 @@ class _CafeScreenState extends State<CafeScreen>
               children: [
                 TextField(
                   controller: nameCtrl,
-                  decoration: const InputDecoration(labelText: 'आइटम का नाम *', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(labelText: 'Item Name *', border: OutlineInputBorder()),
                 ),
                 const SizedBox(height: 12),
                 TextField(
                   controller: priceCtrl,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'कीमत (₹) *', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(labelText: 'Price (₹) *', border: OutlineInputBorder()),
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   initialValue: _categories.contains(category) ? category : (_categories.isNotEmpty ? _categories.first : null),
-                  decoration: const InputDecoration(labelText: 'श्रेणी (Category)', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(labelText: 'Category', border: OutlineInputBorder()),
                   items: _categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
                   onChanged: (val) {
                     if (val != null) setDialogState(() => category = val);
@@ -1447,11 +1447,11 @@ class _CafeScreenState extends State<CafeScreen>
                 const SizedBox(height: 12),
                 TextField(
                   controller: descCtrl,
-                  decoration: const InputDecoration(labelText: 'विवरण (Description)', border: OutlineInputBorder()),
+                  decoration: const InputDecoration(labelText: 'Description', border: OutlineInputBorder()),
                 ),
                 const SizedBox(height: 12),
                 SwitchListTile(
-                  title: const Text('शाकाहारी (Veg)?', style: TextStyle(fontSize: 14)),
+                  title: const Text('Vegetarian (Veg)?', style: TextStyle(fontSize: 14)),
                   value: isVeg,
                   activeThumbColor: Colors.green,
                   onChanged: (val) => setDialogState(() => isVeg = val),
@@ -1460,7 +1460,7 @@ class _CafeScreenState extends State<CafeScreen>
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('रद्द करें')),
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: _amberPrimary),
               onPressed: () async {
@@ -1485,7 +1485,7 @@ class _CafeScreenState extends State<CafeScreen>
                 }
                 _loadData();
               },
-              child: const Text('सुरक्षित करें', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+              child: const Text('Save', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
             ),
           ],
         ),
@@ -1497,9 +1497,9 @@ class _CafeScreenState extends State<CafeScreen>
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text('क्या "${item.name}" को हटाना चाहते हैं?', style: const TextStyle(fontSize: 16)),
+        title: Text('Delete "${item.name}"?', style: const TextStyle(fontSize: 16)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('नहीं')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
             onPressed: () async {
@@ -1508,7 +1508,7 @@ class _CafeScreenState extends State<CafeScreen>
               await repo.deleteMenuItem(item.id);
               _loadData();
             },
-            child: const Text('हटाएं', style: TextStyle(color: Colors.white)),
+            child: const Text('Delete', style: TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -1544,7 +1544,7 @@ class _CafeScreenState extends State<CafeScreen>
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('कुल कैफे बिक्री (Total Revenue)', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                  const Text('Total Cafe Revenue', style: TextStyle(color: Colors.white70, fontSize: 12)),
                   const SizedBox(height: 4),
                   Text(
                     AppFormatters.formatCurrency(totalCafeRevenue),
@@ -1560,7 +1560,7 @@ class _CafeScreenState extends State<CafeScreen>
                 ),
                 child: Column(
                   children: [
-                    const Text('कुल बिल', style: TextStyle(color: Colors.white70, fontSize: 11)),
+                    const Text('Total Bills', style: TextStyle(color: Colors.white70, fontSize: 11)),
                     Text(
                       '${_orders.length}',
                       style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
@@ -1581,7 +1581,7 @@ class _CafeScreenState extends State<CafeScreen>
                     children: [
                       Icon(Icons.receipt_outlined, size: 56, color: AppColors.textSecondary.withOpacity(0.4)),
                       const SizedBox(height: 12),
-                      const Text('अभी तक कोई बिल नहीं बना है', style: TextStyle(color: AppColors.textSecondary)),
+                      const Text('No bills generated yet', style: TextStyle(color: AppColors.textSecondary)),
                     ],
                   ),
                 )
@@ -1656,7 +1656,7 @@ class _CafeScreenState extends State<CafeScreen>
                                   children: [
                                     OutlinedButton.icon(
                                       icon: const Icon(Icons.receipt_long_outlined, size: 14, color: _amberDark),
-                                      label: const Text('बिल देखें', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: _amberDark)),
+                                      label: const Text('View Bill', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: _amberDark)),
                                       style: OutlinedButton.styleFrom(
                                         side: const BorderSide(color: _amberPrimary),
                                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -1717,7 +1717,7 @@ class _CafeScreenState extends State<CafeScreen>
                           const SizedBox(width: 8),
                           const Flexible(
                             child: Text(
-                              'कैफे बिल (Cafe Bill)',
+                              'Cafe Bill',
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                             ),
@@ -1747,7 +1747,7 @@ class _CafeScreenState extends State<CafeScreen>
                         children: [
                           Expanded(
                             child: Text(
-                              'ग्राहक: ${order.guestName ?? "Walk-in Guest"}',
+                              'Customer: ${order.guestName ?? "Walk-in Guest"}',
                               style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
                               overflow: TextOverflow.ellipsis,
                             ),
@@ -1763,7 +1763,7 @@ class _CafeScreenState extends State<CafeScreen>
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('भुगतान स्थिति:', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                          const Text('Payment Status:', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                           Text(
                             '${order.paymentMethod} (PAID)',
                             style: const TextStyle(fontSize: 11, color: AppColors.success, fontWeight: FontWeight.bold),
@@ -1776,7 +1776,7 @@ class _CafeScreenState extends State<CafeScreen>
                 const SizedBox(height: 14),
 
                 // Order Items list
-                const Text('ऑर्डर आइटम (Items):', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
+                const Text('Order Items:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
                 const SizedBox(height: 6),
                 ...order.items.map((it) => Padding(
                   padding: const EdgeInsets.symmetric(vertical: 4),
@@ -1801,7 +1801,7 @@ class _CafeScreenState extends State<CafeScreen>
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text('कुल राशि (Total):', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                    const Text('Total Amount:', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                     Text(
                       AppFormatters.formatCurrency(order.totalAmount),
                       style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: _amberDark),
@@ -1825,7 +1825,7 @@ class _CafeScreenState extends State<CafeScreen>
                         children: [
                           Icon(Icons.chat, size: 16, color: Color(0xFF25D366)),
                           SizedBox(width: 6),
-                          Text('WhatsApp पर बिल भेजें:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF15803D))),
+                          Text('Send Bill via WhatsApp:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF15803D))),
                         ],
                       ),
                       const SizedBox(height: 8),
@@ -1837,7 +1837,7 @@ class _CafeScreenState extends State<CafeScreen>
                           filled: true,
                           fillColor: Colors.white,
                           contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                          hintText: '10 अंकों का WhatsApp नंबर',
+                          hintText: '10-digit WhatsApp number',
                           prefixIcon: const Icon(Icons.phone, size: 16, color: Color(0xFF25D366)),
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF25D366))),
                           enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
@@ -1853,7 +1853,7 @@ class _CafeScreenState extends State<CafeScreen>
                             if (ph.isEmpty) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('कृपया 10 अंकों का WhatsApp नंबर दर्ज करें'),
+                                  content: Text('Please enter a 10-digit WhatsApp number'),
                                   backgroundColor: Colors.orange,
                                   behavior: SnackBarBehavior.floating,
                                 ),
@@ -1874,7 +1874,7 @@ class _CafeScreenState extends State<CafeScreen>
                             );
                           },
                           icon: const Icon(Icons.chat, size: 18, color: Colors.white),
-                          label: const Text('Send WhatsApp (व्हाट्सएप भेजें)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                          label: const Text('Send Bill via WhatsApp', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF25D366),
                             elevation: 1,
@@ -1894,7 +1894,7 @@ class _CafeScreenState extends State<CafeScreen>
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
                     onPressed: () => Navigator.pop(ctx),
-                    child: const Text('बंद करें (Close)', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
+                    child: const Text('Close', style: TextStyle(color: AppColors.textPrimary, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],

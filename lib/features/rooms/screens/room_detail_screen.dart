@@ -85,13 +85,13 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
             ),
             const SizedBox(height: 14),
             Text(
-              'Room ${_room!.number} हटाएं?',
+              'Delete Room ${_room!.number}?',
               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, fontFamily: 'Inter'),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 6),
             Text(
-              'क्या आप सचमुच Room ${_room!.number} को हटाना चाहते हैं? यह एक्शन वापस नहीं हो सकता।',
+              'Are you sure you want to delete Room ${_room!.number}? This action cannot be undone.',
               style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
@@ -107,7 +107,7 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                         side: const BorderSide(color: AppColors.border),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      child: const Text('रद्द करें (Cancel)', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                      child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
                     ),
                   ),
                 ),
@@ -123,7 +123,7 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         elevation: 0,
                       ),
-                      child: const Text('कमरा हटाएं (Delete)', style: TextStyle(fontWeight: FontWeight.w700)),
+                      child: const Text('Delete Room', style: TextStyle(fontWeight: FontWeight.w700)),
                     ),
                   ),
                 ),
@@ -215,7 +215,7 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
           title: Text('Room ${room.number}'),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            tooltip: 'वापस जाएं (Back to Rooms)',
+            tooltip: 'Back to Rooms',
             onPressed: () => context.go('/rooms'),
           ),
         actions: [
@@ -316,7 +316,7 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                   onPressed: () => context.go('/bookings/new?roomId=${room.id}&checkInNow=true'),
                   icon: const Icon(Icons.login_rounded, size: 22),
                   label: const Text(
-                    '🟢 Check-in Guest (इस कमरे में चेक-इन करें)',
+                    'Check-in Guest',
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
                   ),
                 ),
@@ -327,7 +327,7 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                 child: OutlinedButton.icon(
                   onPressed: _changeStatus,
                   icon: const Icon(Icons.edit_outlined, size: 18),
-                  label: const Text('कमरे की स्थिति बदलें (Change Status)'),
+                  label: const Text('Change Status'),
                 ),
               ),
             ] else if (room.status == RoomStatus.occupied) ...[
@@ -335,10 +335,10 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                 width: double.infinity,
                 height: 52,
                 child: ElevatedButton.icon(
-                  onPressed: () => context.go('/check-out?bookingId=${room.currentBookingId ?? ''}'),
+                  onPressed: () => context.go('/check-out?bookingId=${room.currentBookingId ?? ''}&roomId=${room.id}'),
                   icon: const Icon(Icons.logout, size: 22),
                   label: const Text(
-                    '🚪 Check-out & Settle Bill (कमरा खाली करें और बिल)',
+                    'Check-out & Settle Bill',
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
                   ),
                   style: ElevatedButton.styleFrom(
@@ -356,7 +356,7 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                   child: OutlinedButton.icon(
                     onPressed: () => context.go('/bookings/${room.currentBookingId}'),
                     icon: const Icon(Icons.receipt_long, size: 18),
-                    label: const Text('📄 View Booking & Bill (बुकिंग व बिल देखें)'),
+                    label: const Text('View Booking & Bill'),
                   ),
                 ),
               ],
@@ -394,7 +394,7 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                     );
                   },
                   icon: const Icon(Icons.check_circle_outline, size: 20),
-                  label: const Text('✨ Mark Clean & Ready (कमरा तैयार है)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                  label: const Text('Mark Clean & Ready', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                 ),
               ),
               const SizedBox(height: 10),

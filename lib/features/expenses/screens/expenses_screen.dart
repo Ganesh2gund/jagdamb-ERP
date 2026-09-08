@@ -87,7 +87,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        isEdit ? 'खर्च एडिट करें (Edit Expense)' : 'नया खर्च जोड़ें (Add Expense)',
+                        isEdit ? 'Edit Expense' : 'Add Expense',
                         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700, fontFamily: 'Inter'),
                       ),
                       IconButton(
@@ -101,7 +101,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                   // Category
                   DropdownButtonFormField<ExpenseCategory>(
                     decoration: const InputDecoration(
-                      labelText: 'कैटेगरी (Category)',
+                      labelText: 'Category',
                       prefixIcon: Icon(Icons.category),
                     ),
                     value: selectedCategory,
@@ -119,14 +119,14 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                     controller: amountController,
                     keyboardType: const TextInputType.numberWithOptions(decimal: true),
                     decoration: const InputDecoration(
-                      labelText: 'राशि (Amount ₹)',
+                      labelText: 'Amount (₹)',
                       prefixText: '₹ ',
                       prefixIcon: Icon(Icons.currency_rupee),
                     ),
                     validator: (v) {
-                      if (v == null || v.trim().isEmpty) return 'राशि दर्ज करें (Enter amount)';
+                      if (v == null || v.trim().isEmpty) return 'Enter amount';
                       final num = double.tryParse(v.trim());
-                      if (num == null || num <= 0) return 'वैध राशि दर्ज करें (Enter valid amount)';
+                      if (num == null || num <= 0) return 'Enter valid amount';
                       return null;
                     },
                   ),
@@ -136,18 +136,18 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                   TextFormField(
                     controller: descController,
                     decoration: const InputDecoration(
-                      labelText: 'विवरण (Description)',
+                      labelText: 'Description',
                       hintText: 'e.g. Electricity bill, vegetables, plumbing',
                       prefixIcon: Icon(Icons.description),
                     ),
-                    validator: (v) => (v == null || v.trim().isEmpty) ? 'विवरण दर्ज करें (Enter description)' : null,
+                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Enter description' : null,
                   ),
                   const SizedBox(height: 12),
 
                   // Payment Method
                   DropdownButtonFormField<String>(
                     decoration: const InputDecoration(
-                      labelText: 'भुगतान माध्यम (Payment Method)',
+                      labelText: 'Payment Method',
                       prefixIcon: Icon(Icons.payment),
                     ),
                     value: ['Cash', 'UPI', 'Bank Transfer', 'Card'].contains(selectedPayment)
@@ -166,7 +166,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                   TextFormField(
                     controller: notesController,
                     decoration: const InputDecoration(
-                      labelText: 'नोट्स (Notes - Optional)',
+                      labelText: 'Notes (Optional)',
                       prefixIcon: Icon(Icons.notes),
                     ),
                   ),
@@ -216,15 +216,15 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(isEdit
-                                ? '✅ खर्च अपडेट हो गया (Expense updated)'
-                                : '✅ नया खर्च जुड़ गया (Expense added)'),
+                                ? '✅ Expense updated'
+                                : '✅ Expense added'),
                             behavior: SnackBarBehavior.floating,
                           ),
                         );
                       },
                       icon: Icon(isEdit ? Icons.save : Icons.add),
                       label: Text(
-                        isEdit ? 'अपडेट करें (Save Changes)' : 'खर्च जोड़ें (Add Expense)',
+                        isEdit ? 'Save Changes' : 'Add Expense',
                         style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                       ),
                       style: ElevatedButton.styleFrom(
@@ -272,13 +272,13 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
             ),
             const SizedBox(height: 14),
             const Text(
-              'खर्च हटाएं? (Delete Expense)',
+              'Delete Expense?',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, fontFamily: 'Inter'),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 6),
             Text(
-              'क्या आप "${expense.description}" (${AppFormatters.formatCurrency(expense.amount)}) को हटाना चाहते हैं?',
+              'Are you sure you want to delete "${expense.description}" (${AppFormatters.formatCurrency(expense.amount)})?',
               style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
               textAlign: TextAlign.center,
             ),
@@ -294,7 +294,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                         side: const BorderSide(color: AppColors.border),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      child: const Text('रद्द करें (Cancel)', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                      child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
                     ),
                   ),
                 ),
@@ -310,7 +310,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         elevation: 0,
                       ),
-                      child: const Text('खर्च हटाएं (Delete)', style: TextStyle(fontWeight: FontWeight.w700)),
+                      child: const Text('Delete Expense', style: TextStyle(fontWeight: FontWeight.w700)),
                     ),
                   ),
                 ),
@@ -328,7 +328,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('🗑️ खर्च "${expense.description}" हटा दिया गया'),
+          content: Text('🗑️ Expense "${expense.description}" deleted'),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -342,10 +342,10 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Expenses (खर्च प्रबंधन)'),
+        title: const Text('Expenses'),
         actions: [
           IconButton(
-            tooltip: 'रिफ्रेश (Refresh)',
+            tooltip: 'Refresh',
             onPressed: _load,
             icon: const Icon(Icons.refresh),
           ),
@@ -354,7 +354,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddEditExpense(),
         icon: const Icon(Icons.add),
-        label: const Text('खर्च जोड़ें (Add Expense)', style: TextStyle(fontWeight: FontWeight.w700)),
+        label: const Text('Add Expense', style: TextStyle(fontWeight: FontWeight.w700)),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
       ),
@@ -364,11 +364,11 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
           // Summary Cards
           Row(
             children: [
-              Expanded(child: _SummaryCard(label: "Today's (आज)", amount: _todayTotal, color: AppColors.warning)),
+              Expanded(child: _SummaryCard(label: "Today's", amount: _todayTotal, color: AppColors.warning)),
               const SizedBox(width: 10),
-              Expanded(child: _SummaryCard(label: 'This Month (महीना)', amount: _monthTotal, color: AppColors.primary)),
+              Expanded(child: _SummaryCard(label: 'This Month', amount: _monthTotal, color: AppColors.primary)),
               const SizedBox(width: 10),
-              Expanded(child: _SummaryCard(label: 'Total (कुल)', amount: _totalExpenses, color: AppColors.error)),
+              Expanded(child: _SummaryCard(label: 'Total', amount: _totalExpenses, color: AppColors.error)),
             ],
           ),
           const SizedBox(height: 20),
@@ -377,9 +377,9 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const SectionHeader(title: 'खर्चों का इतिहास (Expense History)'),
+              const SectionHeader(title: 'Expense History'),
               Text(
-                'कुल रिकॉर्ड: ${_expenses.length}',
+                'Total: ${_expenses.length}',
                 style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
               ),
             ],
@@ -395,19 +395,19 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                     const Icon(Icons.receipt_long_outlined, size: 60, color: AppColors.textSecondary),
                     const SizedBox(height: 12),
                     const Text(
-                      'कोई खर्च रिकॉर्ड नहीं है (No Expenses Recorded)',
+                      'No Expenses Recorded',
                       style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
                     ),
                     const SizedBox(height: 6),
                     const Text(
-                      'नीचे दिए बटन से पहला खर्च जोड़ें',
+                      'Tap the button below to add your first expense',
                       style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
                     ),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
                       onPressed: () => _showAddEditExpense(),
                       icon: const Icon(Icons.add),
-                      label: const Text('पहला खर्च जोड़ें (Add Expense)'),
+                      label: const Text('Add Expense'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
@@ -451,7 +451,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                               ),
                               if (e.notes != null && e.notes!.isNotEmpty)
                                 Text(
-                                  'नोट: ${e.notes}',
+                                  'Note: ${e.notes}',
                                   style: const TextStyle(
                                     fontSize: 11,
                                     color: AppColors.textSecondary,

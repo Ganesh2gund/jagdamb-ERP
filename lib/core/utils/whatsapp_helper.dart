@@ -72,33 +72,33 @@ class WhatsAppHelper {
       buffer.writeln('📍 _${hAddress}_');
     }
     if (hPhone.isNotEmpty) {
-      buffer.writeln('📞 _फोन: ${hPhone}_');
+      buffer.writeln('📞 _Phone: ${hPhone}_');
     }
     buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━');
-    buffer.writeln('         *TAX INVOICE / बिल*');
+    buffer.writeln('         *TAX INVOICE*');
     buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━');
-    buffer.writeln('*बिल सं. (Bill No):* #$invoiceNo');
-    buffer.writeln('*दिनांक (Date):* $dateStr');
-    buffer.writeln('*ग्राहक (Guest):* $name');
+    buffer.writeln('*Bill No:* #$invoiceNo');
+    buffer.writeln('*Date:* $dateStr');
+    buffer.writeln('*Guest:* $name');
     if (roomOrTable != null && roomOrTable.trim().isNotEmpty) {
-      buffer.writeln('*स्थान (Room/Table):* $roomOrTable');
+      buffer.writeln('*Room/Table:* $roomOrTable');
     }
     buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━');
 
     if (items != null && items.isNotEmpty) {
-      buffer.writeln('*ऑर्डर विवरण (Items):*');
+      buffer.writeln('*Order Items:*');
       for (final it in items) {
         buffer.writeln('• $it');
       }
       buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━');
     }
 
-    buffer.writeln('*कुल राशि (Total Amount):* ₹$amountStr');
-    final pStatus = paymentStatus ?? 'PAID (पूर्ण भुगतान)';
+    buffer.writeln('*Total Amount:* ₹$amountStr');
+    final pStatus = paymentStatus ?? 'PAID';
     final pMethod = (paymentMethod != null && paymentMethod.trim().isNotEmpty) ? ' ($paymentMethod)' : '';
-    buffer.writeln('*भुगतान स्थिति (Status):* ✅ *$pStatus$pMethod*');
+    buffer.writeln('*Payment Status:* ✅ *$pStatus$pMethod*');
     buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━');
-    buffer.writeln('🙏 *धन्यवाद! दोबारा पधारें।*');
+    buffer.writeln('🙏 *Thank you! Visit again.*');
     buffer.write('_Thank you for visiting! Have a wonderful day._');
 
     return buffer.toString();
@@ -239,27 +239,27 @@ class WhatsAppHelper {
     buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━');
     buffer.writeln('  *BANQUET HALL BOOKING INVOICE*');
     buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━');
-    buffer.writeln('*बुकिंग सं. (Booking No):* #$bookingNumber');
-    buffer.writeln('*ग्राहक (Client):* $customerName');
-    buffer.writeln('*इवेंट (Event):* $eventType ($slot Slot)');
-    buffer.writeln('*हॉल (Hall):* $hallName');
-    buffer.writeln('*दिनांक (Date):* $eventDate');
-    buffer.writeln('*गेस्ट संख्या (Guests):* $expectedGuests Persons');
+    buffer.writeln('*Booking No:* #$bookingNumber');
+    buffer.writeln('*Client:* $customerName');
+    buffer.writeln('*Event:* $eventType ($slot Slot)');
+    buffer.writeln('*Hall:* $hallName');
+    buffer.writeln('*Date:* $eventDate');
+    buffer.writeln('*Guests:* $expectedGuests Persons');
     if (packageName != null && packageName.isNotEmpty) {
-      buffer.writeln('*केटरिंग पैकेज:* $packageName (₹${pricePerPlate.toStringAsFixed(0)}/plate)');
+      buffer.writeln('*Catering Package:* $packageName (₹${pricePerPlate.toStringAsFixed(0)}/plate)');
     }
     buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━');
-    buffer.writeln('*हॉल किराया (Hall Rent):* ₹${hallRent.toStringAsFixed(0)}');
+    buffer.writeln('*Hall Rent:* ₹${hallRent.toStringAsFixed(0)}');
     if (foodTotal > 0) {
-      buffer.writeln('*भोजन / केटरिंग (Food):* ₹${foodTotal.toStringAsFixed(0)}');
+      buffer.writeln('*Food & Catering:* ₹${foodTotal.toStringAsFixed(0)}');
     }
     if (extraCharges > 0) {
-      buffer.writeln('*डेकोरेशन व अन्य (Extras):* ₹${extraCharges.toStringAsFixed(0)}');
+      buffer.writeln('*Decoration & Extras:* ₹${extraCharges.toStringAsFixed(0)}');
     }
-    buffer.writeln('*कुल राशि (Grand Total):* ₹${grandTotal.toStringAsFixed(0)}');
-    buffer.writeln('*जमा एडवांस (Advance Paid):* ₹${advancePaid.toStringAsFixed(0)}');
-    buffer.writeln('*बकाया राशि (Balance Due):* ₹${balanceDue.toStringAsFixed(0)}');
-    buffer.writeln('*स्थिति (Status):* ${isSettled ? "✅ PAID IN FULL" : "⏳ PARTIAL ADVANCE / PENDING"}');
+    buffer.writeln('*Grand Total:* ₹${grandTotal.toStringAsFixed(0)}');
+    buffer.writeln('*Advance Paid:* ₹${advancePaid.toStringAsFixed(0)}');
+    buffer.writeln('*Balance Due:* ₹${balanceDue.toStringAsFixed(0)}');
+    buffer.writeln('*Status:* ${isSettled ? "✅ PAID IN FULL" : "⏳ PARTIAL ADVANCE / PENDING"}');
     buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━');
     buffer.writeln('Thank you for choosing $hName for your special celebration! 🎉');
 

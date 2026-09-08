@@ -119,7 +119,7 @@ class _BillingScreenState extends State<BillingScreen> {
       roomOrTable: 'Room ${b.roomNumber} (${b.roomType})',
       items: _items.map((i) => '${i.description} : ₹${i.total.toStringAsFixed(0)}').toList(),
       paymentMethod: 'Direct',
-      paymentStatus: _isSettled ? 'PAID (पूर्ण भुगतान)' : 'PENDING / PARTIAL',
+      paymentStatus: _isSettled ? 'PAID IN FULL' : 'PENDING / PARTIAL',
       date: b.checkOut,
     );
   }
@@ -237,14 +237,14 @@ class _BillingScreenState extends State<BillingScreen> {
                 // Calculation Breakdown
                 Column(
                   children: [
-                    _dialogTotalRow('Subtotal (कमरा किराया)', AppFormatters.formatCurrency(_subtotal)),
+                    _dialogTotalRow('Subtotal (Room Tariff)', AppFormatters.formatCurrency(_subtotal)),
                     if (b.paidAmount > 0 && !_isSettled)
-                      _dialogTotalRow('Advance Paid (अग्रिम जमा)', AppFormatters.formatCurrency(b.paidAmount), color: AppColors.success),
+                      _dialogTotalRow('Advance Paid', AppFormatters.formatCurrency(b.paidAmount), color: AppColors.success),
                     const Divider(),
-                    _dialogTotalRow('Grand Total (कुल बिल)', AppFormatters.formatCurrency(_grandTotal), isBold: true),
-                    _dialogTotalRow('Amount Paid (प्राप्त राशि)', AppFormatters.formatCurrency(_paid), color: AppColors.success),
+                    _dialogTotalRow('Grand Total', AppFormatters.formatCurrency(_grandTotal), isBold: true),
+                    _dialogTotalRow('Amount Paid', AppFormatters.formatCurrency(_paid), color: AppColors.success),
                     if (_pending > 0)
-                      _dialogTotalRow('Balance Due (बकाया)', AppFormatters.formatCurrency(_pending), isBold: true, color: AppColors.error),
+                      _dialogTotalRow('Balance Due', AppFormatters.formatCurrency(_pending), isBold: true, color: AppColors.error),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -262,7 +262,7 @@ class _BillingScreenState extends State<BillingScreen> {
                         },
                         icon: const Icon(Icons.chat, size: 18),
                         label: const Text(
-                          'Send WhatsApp (व्हाट्सएप)',
+                          'Send WhatsApp',
                           style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                         ),
                         style: ElevatedButton.styleFrom(
@@ -278,7 +278,7 @@ class _BillingScreenState extends State<BillingScreen> {
                       height: 40,
                       child: TextButton(
                         onPressed: () => Navigator.pop(ctx),
-                        child: const Text('बंद करें (Close)', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                        child: const Text('Close', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
                       ),
                     ),
                   ],
@@ -325,10 +325,10 @@ class _BillingScreenState extends State<BillingScreen> {
       child: Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
-          title: const Text('Hotel Bill & Receipt (होटल बिल)'),
+          title: const Text('Hotel Bill & Receipt'),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            tooltip: 'वापस जाएं (Back to Bookings)',
+            tooltip: 'Back to Bookings',
             onPressed: () => context.go('/bookings'),
           ),
           actions: [
@@ -531,30 +531,30 @@ class _BillingScreenState extends State<BillingScreen> {
               AppCard(
                 child: Column(
                   children: [
-                    _TotalLine(label: 'कमरे का किराया (Room Tariff)', value: AppFormatters.formatCurrency(_subtotal)),
+                    _TotalLine(label: 'Room Tariff', value: AppFormatters.formatCurrency(_subtotal)),
                     if (b.paidAmount > 0 && !_isSettled)
                       _TotalLine(
-                        label: 'अग्रिम जमा राशि (Advance Paid)',
+                        label: 'Advance Paid',
                         value: '- ${AppFormatters.formatCurrency(b.paidAmount)}',
                         valueColor: AppColors.success,
                         isBold: true,
                       ),
                     const Divider(),
                     _TotalLine(
-                      label: 'कुल बिल (Total Bill)',
+                      label: 'Total Bill',
                       value: AppFormatters.formatCurrency(_grandTotal),
                       isBold: true,
                       isLarge: true,
                     ),
                     const Divider(),
                     _TotalLine(
-                      label: 'कुल प्राप्त (Total Paid)',
+                      label: 'Total Paid',
                       value: AppFormatters.formatCurrency(_paid),
                       valueColor: AppColors.success,
                     ),
                     if (_pending > 0)
                       _TotalLine(
-                        label: 'बाकी रकम (Balance Due)',
+                        label: 'Balance Due',
                         value: AppFormatters.formatCurrency(_pending),
                         valueColor: AppColors.error,
                         isBold: true,
@@ -562,7 +562,7 @@ class _BillingScreenState extends State<BillingScreen> {
                     else
                       const _TotalLine(
                         label: 'Payment Status',
-                        value: 'पूर्ण भुगतान (FULL PAID)',
+                        value: 'PAID IN FULL',
                         valueColor: AppColors.success,
                         isBold: true,
                       ),
@@ -606,7 +606,7 @@ class _BillingScreenState extends State<BillingScreen> {
                     onPressed: _markPaid,
                     icon: const Icon(Icons.check_circle_outline, color: AppColors.success, size: 18),
                     label: Text(
-                      'बाकी ₹${_pending.toStringAsFixed(0)} प्राप्त करें (Mark as Paid)',
+                      'Collect Balance ₹${_pending.toStringAsFixed(0)} (Mark Paid)',
                       style: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.success),
                     ),
                     style: OutlinedButton.styleFrom(

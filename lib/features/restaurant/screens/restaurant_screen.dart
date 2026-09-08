@@ -181,12 +181,12 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                isEdit ? 'टेबल एडिट करें (Edit Table)' : 'नई टेबल जोड़ें (Add Table)',
+                                isEdit ? 'Edit Table' : 'Add Table',
                                 style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, fontFamily: 'Inter'),
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                isEdit ? 'टेबल नंबर और बैठने की क्षमता बदलें' : 'रेस्टोरेंट में नई डाइनिंग टेबल दर्ज करें',
+                                isEdit ? 'Change table number and seating capacity' : 'Add a new dining table to the restaurant',
                                 style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                               ),
                             ],
@@ -203,13 +203,13 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                     const SizedBox(height: 16),
 
                     // Table Number Input
-                    const Text('टेबल नंबर (Table Number)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                    const Text('Table Number', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: numCtrl,
                       autofocus: !isEdit,
                       decoration: InputDecoration(
-                        hintText: 'उदा. 1, 2, 10, T-5',
+                        hintText: 'e.g. 1, 2, 10, T-5',
                         prefixIcon: const Icon(Icons.pin, color: AppColors.primary),
                         filled: true,
                         fillColor: AppColors.grey50,
@@ -217,21 +217,21 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
                         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
                       ),
-                      validator: (v) => (v == null || v.trim().isEmpty) ? 'टेबल नंबर दर्ज करें' : null,
+                      validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter table number' : null,
                     ),
                     const SizedBox(height: 16),
 
                     // Seating Capacity Input
-                    const Text('बैठने की क्षमता (Seating Capacity)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                    const Text('Seating Capacity', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
                     const SizedBox(height: 8),
                     TextFormField(
                       controller: capCtrl,
                       keyboardType: TextInputType.number,
                       onChanged: (_) => setModal(() {}),
                       decoration: InputDecoration(
-                        hintText: 'उदा. 2, 4, 6, 8',
+                        hintText: 'e.g. 2, 4, 6, 8',
                         prefixIcon: const Icon(Icons.event_seat, color: AppColors.primary),
-                        suffixText: 'सीटें (Seats)',
+                        suffixText: 'Seats',
                         filled: true,
                         fillColor: AppColors.grey50,
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
@@ -239,9 +239,9 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
                       ),
                       validator: (v) {
-                        if (v == null || v.trim().isEmpty) return 'क्षमता दर्ज करें';
+                        if (v == null || v.trim().isEmpty) return 'Please enter capacity';
                         final n = int.tryParse(v);
-                        if (n == null || n <= 0) return 'वैध संख्या दर्ज करें';
+                        if (n == null || n <= 0) return 'Please enter a valid number';
                         return null;
                       },
                     ),
@@ -256,7 +256,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                           return Padding(
                             padding: const EdgeInsets.only(right: 8),
                             child: ChoiceChip(
-                              label: Text('$capVal सीटें'),
+                              label: Text('$capVal Seats'),
                               selected: isSel,
                               selectedColor: AppColors.primary,
                               labelStyle: TextStyle(
@@ -297,7 +297,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                           if (!mounted) return;
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(isEdit ? '✅ Table $number अपडेट हो गई!' : '✅ Table $number सफलतापूर्वक जुड़ गई!'),
+                              content: Text(isEdit ? '✅ Table $number updated!' : '✅ Table $number added successfully!'),
                               behavior: SnackBarBehavior.floating,
                               backgroundColor: AppColors.success,
                             ),
@@ -305,7 +305,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                         },
                         icon: Icon(isEdit ? Icons.check_circle_outline : Icons.add, size: 20),
                         label: Text(
-                          isEdit ? 'अपडेट करें (Save Changes)' : 'टेबल सुरक्षित करें (Save Table)',
+                          isEdit ? 'Save Changes' : 'Save Table',
                           style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                         ),
                         style: ElevatedButton.styleFrom(
@@ -328,9 +328,9 @@ class _RestaurantScreenState extends State<RestaurantScreen>
 
   Future<void> _deleteTable(RestaurantTable t) async {
     final ok = await _showConfirmDeleteSheet(
-      title: 'Table ${t.number} हटाएं?',
-      message: 'क्या आप सचमुच Table ${t.number} को हटाना चाहते हैं?',
-      confirmText: 'हाँ, हटाएं (Delete)',
+      title: 'Delete Table ${t.number}?',
+      message: 'Are you sure you want to delete Table ${t.number}?',
+      confirmText: 'Delete',
     );
 
     if (ok == true) {
@@ -339,7 +339,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
       await _loadData();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('🗑️ Table ${t.number} हटा दी गई'), behavior: SnackBarBehavior.floating),
+        SnackBar(content: Text('🗑️ Table ${t.number} deleted'), behavior: SnackBarBehavior.floating),
       );
     }
   }
@@ -393,9 +393,9 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('नई कैटेगरी जोड़ें (Add Category)', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, fontFamily: 'Inter')),
+                            Text('Add Category', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, fontFamily: 'Inter')),
                             SizedBox(height: 2),
-                            Text('व्यंजनों का वर्गीकरण (जैसे Thali, Snacks)', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                            Text('Dish classification (e.g. Thali, Snacks, Chinese)', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                           ],
                         ),
                       ),
@@ -405,13 +405,13 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                   const SizedBox(height: 16),
                   const Divider(height: 1),
                   const SizedBox(height: 16),
-                  const Text('कैटेगरी का नाम (Category Name)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                  const Text('Category Name', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: catCtrl,
                     autofocus: true,
                     decoration: InputDecoration(
-                      hintText: 'उदा. Chinese, Thali, Snacks, Drinks',
+                      hintText: 'e.g. Chinese, Thali, Snacks, Drinks',
                       prefixIcon: const Icon(Icons.bookmark_outline, color: AppColors.primary),
                       filled: true,
                       fillColor: AppColors.grey50,
@@ -419,7 +419,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
                       focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
                     ),
-                    validator: (v) => (v == null || v.trim().isEmpty) ? 'कैटेगरी नाम दर्ज करें' : null,
+                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter category name' : null,
                   ),
                   const SizedBox(height: 12),
 
@@ -456,11 +456,11 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                         await _loadData();
                         if (!mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('✅ Category "$name" जोड़ दी गई'), backgroundColor: AppColors.success, behavior: SnackBarBehavior.floating),
+                          SnackBar(content: Text('✅ Category "$name" added'), backgroundColor: AppColors.success, behavior: SnackBarBehavior.floating),
                         );
                       },
                       icon: const Icon(Icons.add_circle_outline, size: 20),
-                      label: const Text('कैटेगरी जोड़ें (Save Category)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                      label: const Text('Save Category', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
@@ -479,9 +479,9 @@ class _RestaurantScreenState extends State<RestaurantScreen>
 
   Future<void> _deleteCategory(String name) async {
     final ok = await _showConfirmDeleteSheet(
-      title: 'Category "$name" हटाएं?',
-      message: 'क्या आप सचमुच category "$name" को हटाना चाहते हैं?',
-      confirmText: 'हाँ, हटाएं (Delete)',
+      title: 'Delete Category "$name"?',
+      message: 'Are you sure you want to delete category "$name"?',
+      confirmText: 'Delete',
     );
 
     if (ok == true) {
@@ -504,7 +504,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
     if (_categories.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('कृपया पहले कम से कम एक कैटेगरी जोड़ें (Please add a category first)'),
+          content: Text('Please add at least one category first'),
           behavior: SnackBarBehavior.floating,
         ),
       );
@@ -563,12 +563,12 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              isEdit ? 'डिश एडिट करें (Edit Dish)' : 'नई डिश जोड़ें (Add Dish)',
+                              isEdit ? 'Edit Dish' : 'Add Dish',
                               style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800, fontFamily: 'Inter'),
                             ),
                             const SizedBox(height: 2),
                             Text(
-                              isEdit ? 'डिश का नाम, कीमत या कैटेगरी बदलें' : 'मेन्यू में नया खाद्य पदार्थ जोड़ें',
+                              isEdit ? 'Change dish name, price or category' : 'Add a new food item to the menu',
                               style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                             ),
                           ],
@@ -582,7 +582,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                   const SizedBox(height: 16),
 
                   // Veg / Non-veg selector cards
-                  const Text('व्यंजन का प्रकार (Food Type)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                  const Text('Food Type', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -606,7 +606,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                                 SizedBox(width: 6),
                                 Flexible(
                                   child: Text(
-                                    'शाकाहारी (Veg)',
+                                    'Veg',
                                     style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, color: Color(0xFF15803D)),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -638,7 +638,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                                 SizedBox(width: 6),
                                 Flexible(
                                   child: Text(
-                                    'मांसाहारी (Non-Veg)',
+                                    'Non-Veg',
                                     style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, color: Color(0xFFB91C1C)),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
@@ -654,12 +654,12 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                   const SizedBox(height: 16),
 
                   // Dish Name
-                  const Text('डिश का नाम (Dish Name)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                  const Text('Dish Name', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: nameCtrl,
                     decoration: InputDecoration(
-                      hintText: 'उदा. Paneer Butter Masala, Roti, Dal Tadka',
+                      hintText: 'e.g. Paneer Butter Masala, Roti, Dal Tadka',
                       prefixIcon: const Icon(Icons.fastfood_outlined, color: AppColors.primary),
                       filled: true,
                       fillColor: AppColors.grey50,
@@ -667,7 +667,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                       enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.border)),
                       focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
                     ),
-                    validator: (v) => (v == null || v.trim().isEmpty) ? 'डिश का नाम दर्ज करें' : null,
+                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter dish name' : null,
                   ),
                   const SizedBox(height: 16),
 
@@ -679,13 +679,13 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('कीमत (Price ₹)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                            const Text('Price (₹)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
                             const SizedBox(height: 8),
                             TextFormField(
                               controller: priceCtrl,
                               keyboardType: TextInputType.number,
                               decoration: InputDecoration(
-                                hintText: 'उदा. 180',
+                                hintText: 'e.g. 180',
                                 prefixText: '₹ ',
                                 prefixStyle: const TextStyle(fontWeight: FontWeight.w700, color: AppColors.primary),
                                 filled: true,
@@ -695,9 +695,9 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                                 focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: AppColors.primary, width: 2)),
                               ),
                               validator: (v) {
-                                if (v == null || v.trim().isEmpty) return 'कीमत दर्ज करें';
+                                if (v == null || v.trim().isEmpty) return 'Please enter price';
                                 final p = double.tryParse(v);
-                                if (p == null || p < 0) return 'अवैध कीमत';
+                                if (p == null || p < 0) return 'Invalid price';
                                 return null;
                               },
                             ),
@@ -710,7 +710,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('कैटेगरी (Category)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                            const Text('Category', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
                             const SizedBox(height: 8),
                             DropdownButtonFormField<String>(
                               value: _categories.contains(category) ? category : (_categories.isNotEmpty ? _categories.first : null),
@@ -735,13 +735,13 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                   const SizedBox(height: 16),
 
                   // Description
-                  const Text('विवरण (Description - Optional)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                  const Text('Description (Optional)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 8),
                   TextFormField(
                     controller: descCtrl,
                     maxLines: 2,
                     decoration: InputDecoration(
-                      hintText: 'उदा. Rich gravy with butter and fresh paneer',
+                      hintText: 'e.g. Rich gravy with butter and fresh paneer',
                       prefixIcon: const Icon(Icons.notes_outlined, color: AppColors.textSecondary),
                       filled: true,
                       fillColor: AppColors.grey50,
@@ -782,7 +782,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                         if (!mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text(isEdit ? '✅ "$name" अपडेट हो गया' : '✅ "$name" मेन्यू में जोड़ दिया गया'),
+                            content: Text(isEdit ? '✅ "$name" updated' : '✅ "$name" added to menu'),
                             backgroundColor: AppColors.success,
                             behavior: SnackBarBehavior.floating,
                           ),
@@ -790,7 +790,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                       },
                       icon: Icon(isEdit ? Icons.check_circle_outline : Icons.add, size: 20),
                       label: Text(
-                        isEdit ? 'डिश अपडेट करें (Save Changes)' : 'डिश सुरक्षित करें (Save Dish)',
+                        isEdit ? 'Save Changes' : 'Save Dish',
                         style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                       ),
                       style: ElevatedButton.styleFrom(
@@ -812,9 +812,9 @@ class _RestaurantScreenState extends State<RestaurantScreen>
 
   Future<void> _deleteMenuItem(MenuItem item) async {
     final ok = await _showConfirmDeleteSheet(
-      title: '"${item.name}" हटाएं?',
-      message: 'क्या आप सचमुच "${item.name}" को मेन्यू से हटाना चाहते हैं?',
-      confirmText: 'हाँ, हटाएं (Delete)',
+      title: 'Delete "${item.name}"?',
+      message: 'Are you sure you want to delete "${item.name}" from the menu?',
+      confirmText: 'Delete',
     );
 
     if (ok == true) {
@@ -823,7 +823,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
       await _loadData();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('🗑️ "${item.name}" हटा दी गई'), behavior: SnackBarBehavior.floating),
+        SnackBar(content: Text('🗑️ "${item.name}" deleted'), behavior: SnackBarBehavior.floating),
       );
     }
   }
@@ -886,7 +886,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                         side: const BorderSide(color: AppColors.border),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      child: const Text('रद्द करें (Cancel)', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                      child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
                     ),
                   ),
                 ),
@@ -931,7 +931,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
         builder: (ctx2, setModal) {
           final subtotal = _cartTotal;
           final targetOptions = [
-            'Counter / Walk-in (काउंटर)',
+            'Counter / Walk-in',
             ..._tables.map((t) => 'Table ${t.number}'),
           ];
 
@@ -960,7 +960,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                     children: [
                       const Expanded(
                         child: Text(
-                          'ऑर्डर और बिलिंग (Restaurant POS)',
+                          'Order & Billing (Restaurant POS)',
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
                           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, fontFamily: 'Inter'),
@@ -978,14 +978,14 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
                         icon: const Icon(Icons.delete_outline, size: 16, color: AppColors.error),
-                        label: const Text('खाली करें', style: TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.w600)),
+                        label: const Text('Clear Cart', style: TextStyle(color: AppColors.error, fontSize: 12, fontWeight: FontWeight.w600)),
                       ),
                     ],
                   ),
                   const Divider(),
 
                   // ── Target (Table or Counter) ──
-                  const Text('ऑर्डर किसके लिए है? (Order For):', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                  const Text('Order For:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
                     value: targetOptions.contains(selectedTarget) ? selectedTarget : targetOptions.first,
@@ -1001,7 +1001,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                   const SizedBox(height: 14),
 
                   // ── Cart Items List ──
-                  const Text('चयनित व्यंजन (Selected Items):', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                  const Text('Selected Items:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 8),
                   Container(
                     decoration: BoxDecoration(
@@ -1072,8 +1072,8 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                           controller: guestNameCtrl,
                           decoration: const InputDecoration(
                             isDense: true,
-                            labelText: 'ग्राहक का नाम (Optional)',
-                            hintText: 'Guest Name',
+                            labelText: 'Guest Name (Optional)',
+                            hintText: 'e.g. Rahul Sharma',
                             prefixIcon: Icon(Icons.person, size: 18),
                           ),
                         ),
@@ -1085,7 +1085,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                           keyboardType: TextInputType.phone,
                           decoration: const InputDecoration(
                             isDense: true,
-                            labelText: 'मोबाइल नंबर (Optional)',
+                            labelText: 'Mobile No. (Optional)',
                             hintText: 'Phone for WhatsApp',
                             prefixIcon: Icon(Icons.phone, size: 18),
                           ),
@@ -1096,7 +1096,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                   const SizedBox(height: 16),
 
                   // ── Direct Payment Method Choice ──
-                  const Text('सीधा भुगतान माध्यम (Payment Method):', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                  const Text('Payment Method:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 8),
                   Row(
                     children: ['Cash', 'UPI / QR', 'Card'].map((m) {
@@ -1133,7 +1133,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('कुल राशि (Grand Total):', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                      const Text('Grand Total:', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                       Text(
                         AppFormatters.formatCurrency(subtotal),
                         style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w900, color: AppColors.primary),
@@ -1180,7 +1180,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                       },
                       icon: const Icon(Icons.check_circle_rounded, size: 22),
                       label: Text(
-                        '✅ Collect ${AppFormatters.formatCurrency(subtotal)} ($paymentMethod Paid)',
+                        'Collect ${AppFormatters.formatCurrency(subtotal)} ($paymentMethod Paid)',
                         style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
                       ),
                       style: ElevatedButton.styleFrom(
@@ -1216,12 +1216,12 @@ class _RestaurantScreenState extends State<RestaurantScreen>
             ),
             const SizedBox(height: 16),
             const Text(
-              'भुगतान सफल! (Payment Successful)',
+              'Payment Successful!',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, fontFamily: 'Inter'),
             ),
             const SizedBox(height: 6),
             Text(
-              '${order.tableOrRoom} • ${order.paymentMethod} से भुगतान प्राप्त हुआ',
+              '${order.tableOrRoom} • Payment received via ${order.paymentMethod}',
               style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 14),
@@ -1238,8 +1238,8 @@ class _RestaurantScreenState extends State<RestaurantScreen>
               decoration: InputDecoration(
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                labelText: 'व्हाट्सएप नंबर (WhatsApp No.)',
-                hintText: '10 अंकों का मोबाइल नंबर',
+                labelText: 'WhatsApp Number',
+                hintText: '10-digit mobile number',
                 prefixIcon: const Icon(Icons.phone, size: 18, color: Color(0xFF25D366)),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
               ),
@@ -1256,7 +1256,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                   if (ph.isEmpty) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('कृपया ग्राहक का WhatsApp नंबर दर्ज करें'),
+                        content: Text('Please enter customer WhatsApp number'),
                         backgroundColor: Colors.orange,
                         behavior: SnackBarBehavior.floating,
                       ),
@@ -1278,7 +1278,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                 },
                 icon: const Icon(Icons.chat, size: 20, color: Colors.white),
                 label: const Text(
-                  'Send WhatsApp (व्हाट्सएप भेजें)',
+                  'Send WhatsApp Receipt',
                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: Colors.white),
                 ),
                 style: ElevatedButton.styleFrom(
@@ -1294,7 +1294,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
               width: double.infinity,
               child: OutlinedButton(
                 onPressed: () => Navigator.pop(ctx),
-                child: const Text('ओके (Done)'),
+                child: const Text('Done'),
               ),
             ),
           ],
@@ -1313,10 +1313,10 @@ class _RestaurantScreenState extends State<RestaurantScreen>
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Restaurant & POS (रेस्टोरेंट)'),
+        title: const Text('Restaurant & POS'),
         actions: [
           IconButton(
-            tooltip: 'रिफ्रेश (Refresh)',
+            tooltip: 'Refresh',
             onPressed: _loadData,
             icon: const Icon(Icons.refresh),
           ),
@@ -1325,9 +1325,9 @@ class _RestaurantScreenState extends State<RestaurantScreen>
           controller: _tabController,
           labelPadding: const EdgeInsets.symmetric(horizontal: 10),
           tabs: [
-            const Tab(icon: Icon(Icons.table_restaurant, size: 20), text: 'टेबल्स (Tables)'),
-            const Tab(icon: Icon(Icons.restaurant_menu, size: 20), text: 'मेन्यू (Menu)'),
-            Tab(icon: const Icon(Icons.receipt_long, size: 20), text: 'बिल (${_orders.length})'),
+            const Tab(icon: Icon(Icons.table_restaurant, size: 20), text: 'Tables'),
+            const Tab(icon: Icon(Icons.restaurant_menu, size: 20), text: 'Menu'),
+            Tab(icon: const Icon(Icons.receipt_long, size: 20), text: 'Bills (${_orders.length})'),
           ],
         ),
       ),
@@ -1373,7 +1373,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      'डाइनिंग टेबल प्रबंधन',
+                      'Dining Tables Management',
                       style: TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
@@ -1397,7 +1397,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                         ),
                         const SizedBox(width: 6),
                         Text(
-                          'कुल टेबल: ${_tables.length}',
+                          'Total Tables: ${_tables.length}',
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
@@ -1414,7 +1414,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                 onPressed: () => _showAddEditTableDialog(),
                 icon: const Icon(Icons.add_rounded, size: 18),
                 label: const Text(
-                  'टेबल जोड़ें',
+                  'Add Table',
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
@@ -1442,14 +1442,14 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                   children: [
                     const Icon(Icons.table_restaurant_outlined, size: 60, color: AppColors.textSecondary),
                     const SizedBox(height: 12),
-                    const Text('कोई टेबल नहीं जोड़ी गई है (No Tables Added)', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                    const Text('No Tables Added Yet', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
                     const SizedBox(height: 6),
-                    const Text('ऊपर दिए बटन से नई टेबल जोड़ें', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                    const Text('Add a new dining table using the button above', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
                       onPressed: () => _showAddEditTableDialog(),
                       icon: const Icon(Icons.add_rounded),
-                      label: const Text('पहली टेबल जोड़ें (Add First Table)'),
+                      label: const Text('Add First Table'),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
@@ -1495,7 +1495,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                           _tabController.animateTo(1);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('Table ${t.number} के लिए मेन्यू खुला'),
+                              content: Text('Menu opened for Table ${t.number}'),
                               duration: const Duration(seconds: 1),
                               behavior: SnackBarBehavior.floating,
                             ),
@@ -1560,7 +1560,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                                               children: [
                                                 Icon(Icons.edit_outlined, size: 18, color: AppColors.primary),
                                                 SizedBox(width: 8),
-                                                Text('एडिट करें (Edit)'),
+                                                Text('Edit'),
                                               ],
                                             ),
                                           ),
@@ -1570,7 +1570,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                                               children: [
                                                 Icon(Icons.delete_outline, size: 18, color: AppColors.error),
                                                 SizedBox(width: 8),
-                                                Text('हटाएं (Delete)', style: TextStyle(color: AppColors.error)),
+                                                Text('Delete', style: TextStyle(color: AppColors.error)),
                                               ],
                                             ),
                                           ),
@@ -1613,7 +1613,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                                         ),
                                       ),
                                       child: Text(
-                                        '${t.capacity} सीट (${t.capacity} Seater)',
+                                        '${t.capacity} Seater',
                                         style: const TextStyle(
                                           fontSize: 11,
                                           fontWeight: FontWeight.w600,
@@ -1636,7 +1636,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                                       _tabController.animateTo(1);
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(
-                                          content: Text('Table ${t.number} के लिए मेन्यू खुला'),
+                                          content: Text('Menu opened for Table ${t.number}'),
                                           duration: const Duration(seconds: 1),
                                           behavior: SnackBarBehavior.floating,
                                         ),
@@ -1644,7 +1644,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                                     },
                                     icon: const Icon(Icons.add_shopping_cart_rounded, size: 14),
                                     label: const Text(
-                                      'ऑर्डर लें',
+                                      'Take Order',
                                       style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
                                     ),
                                     style: ElevatedButton.styleFrom(
@@ -1685,12 +1685,12 @@ class _RestaurantScreenState extends State<RestaurantScreen>
               const Icon(Icons.category_outlined, size: 64, color: AppColors.textSecondary),
               const SizedBox(height: 14),
               const Text(
-                'कोई कैटेगरी नहीं है (No Categories Yet)',
+                'No Categories Yet',
                 style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16),
               ),
               const SizedBox(height: 6),
               const Text(
-                'मेन्यू में डिश जोड़ने से पहले एक कैटेगरी बनाएं (जैसे: Thali, Snacks, Chinese, Drinks)',
+                'Create a category before adding dishes (e.g. Thali, Snacks, Chinese, Drinks)',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
               ),
@@ -1698,7 +1698,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
               ElevatedButton.icon(
                 onPressed: _showAddCategoryDialog,
                 icon: const Icon(Icons.add),
-                label: const Text('+ पहली कैटेगरी जोड़ें (Add Category)'),
+                label: const Text('+ Add Category'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
@@ -1728,7 +1728,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
           child: TextField(
             onChanged: (val) => setState(() => _searchQuery = val),
             decoration: InputDecoration(
-              hintText: 'व्यंजन या ड्रिंक्स खोजें (Search food, drinks)...',
+              hintText: 'Search food, drinks...',
               prefixIcon: const Icon(Icons.search_rounded, size: 20, color: AppColors.textSecondary),
               suffixIcon: _searchQuery.isNotEmpty
                   ? IconButton(
@@ -1764,11 +1764,11 @@ class _RestaurantScreenState extends State<RestaurantScreen>
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
-                // 'सभी (All)' chip
+                // 'All' chip
                 Padding(
                   padding: const EdgeInsets.only(right: 8),
                   child: ChoiceChip(
-                    label: const Text('सभी (All)'),
+                    label: const Text('All'),
                     selected: _selectedCategory.isEmpty,
                     selectedColor: AppColors.primarySurface,
                     labelStyle: TextStyle(
@@ -1835,9 +1835,9 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                     Expanded(
                       child: Text(
                         _searchQuery.isNotEmpty
-                            ? 'खोज परिणाम (${filtered.length})'
+                            ? 'Search Results (${filtered.length})'
                             : _selectedCategory.isEmpty
-                                ? 'सभी व्यंजन (${filtered.length})'
+                                ? 'All Dishes (${filtered.length})'
                                 : '$_selectedCategory (${filtered.length})',
                         style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, fontFamily: 'Inter'),
                         maxLines: 1,
@@ -1852,7 +1852,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                 onPressed: () => _showAddEditMenuItemDialog(),
                 icon: const Icon(Icons.add_rounded, size: 18),
                 label: const Text(
-                  'डिश जोड़ें',
+                  'Add Dish',
                   style: TextStyle(
                     fontWeight: FontWeight.w700,
                     fontSize: 13,
@@ -1885,19 +1885,19 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                         const SizedBox(height: 12),
                         Text(
                           _searchQuery.isNotEmpty
-                              ? 'कोई डिश नहीं मिली (No matches found)'
+                              ? 'No matches found'
                               : _selectedCategory.isNotEmpty
-                                  ? '"$_selectedCategory" में कोई डिश नहीं है'
-                                  : 'मेन्यू में कोई डिश नहीं है',
+                                  ? 'No dishes found in "$_selectedCategory"'
+                                  : 'No dishes found in menu',
                           style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
                         ),
                         const SizedBox(height: 6),
-                        const Text('ऊपर दिए बटन से नई डिश जोड़ें', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                        const Text('Add a new dish using the button above', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
                         const SizedBox(height: 14),
                         ElevatedButton.icon(
                           onPressed: () => _showAddEditMenuItemDialog(),
                           icon: const Icon(Icons.add),
-                          label: const Text('डिश जोड़ें (Add Food Item)'),
+                          label: const Text('Add Dish'),
                         ),
                       ],
                     ),
@@ -1987,7 +1987,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                   ),
                   const Spacer(),
                   Text(
-                    '${entry.value.length} डिश',
+                    '${entry.value.length} Dishes',
                     style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
                   ),
                 ],
@@ -2094,7 +2094,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                                 children: [
                                   Icon(Icons.edit_outlined, size: 18, color: AppColors.primary),
                                   SizedBox(width: 8),
-                                  Text('एडिट करें (Edit)'),
+                                  Text('Edit'),
                                 ],
                               ),
                             ),
@@ -2104,7 +2104,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                                 children: [
                                   Icon(Icons.delete_outline, size: 18, color: AppColors.error),
                                   SizedBox(width: 8),
-                                  Text('हटाएं (Delete)', style: TextStyle(color: AppColors.error)),
+                                  Text('Delete', style: TextStyle(color: AppColors.error)),
                                 ],
                               ),
                             ),
@@ -2144,7 +2144,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                             Icon(Icons.add_rounded, size: 15, color: Color(0xFF15803D)),
                             SizedBox(width: 4),
                             Text(
-                              'जोड़ें',
+                              'Add',
                               style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF15803D)),
                             ),
                           ],
@@ -2225,7 +2225,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'कुल रेस्टोरेंट बिक्री (Total Revenue)',
+                    'Total Restaurant Revenue',
                     style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500),
                   ),
                   const SizedBox(height: 5),
@@ -2254,7 +2254,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                 child: Column(
                   children: [
                     const Text(
-                      'कुल बिल',
+                      'Total Bills',
                       style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(height: 2),
@@ -2285,9 +2285,9 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                       children: [
                         Icon(Icons.receipt_long_outlined, size: 60, color: AppColors.textSecondary),
                         SizedBox(height: 12),
-                        Text('कोई बिल इतिहास नहीं है (No Orders Yet)', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                        Text('No Orders Yet', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
                         SizedBox(height: 6),
-                        Text('मेन्यू से ऑर्डर लेकर पेमेंट सेटल करने पर बिल यहाँ दिखाई देंगे', textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                        Text('Orders taken from menu and settled will appear here', textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
                       ],
                     ),
                   ),
@@ -2374,7 +2374,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                                   OutlinedButton.icon(
                                     onPressed: () => _showBillDetailDialog(o),
                                     icon: const Icon(Icons.receipt_long, size: 14, color: AppColors.primary),
-                                    label: const Text('बिल देखें', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary)),
+                                    label: const Text('View Bill', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary)),
                                     style: OutlinedButton.styleFrom(
                                       side: const BorderSide(color: AppColors.primary),
                                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -2409,7 +2409,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
             const SizedBox(width: 8),
             const Expanded(
               child: Text(
-                'बिल विवरण (Bill Details)',
+                'Bill Details',
                 style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
               ),
             ),
@@ -2457,7 +2457,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                 ),
               ),
               const SizedBox(height: 12),
-              const Text('ऑर्डर आइटम (Items):', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
+              const Text('Order Items:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
               const SizedBox(height: 6),
               ...order.items.map((it) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 3),
@@ -2480,7 +2480,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  const Text('कुल राशि (Total):', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
+                  const Text('Total:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold)),
                   Text(
                     AppFormatters.formatCurrency(order.total),
                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Color(0xFF16A34A)),
@@ -2504,7 +2504,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                       children: [
                         Icon(Icons.chat, size: 16, color: Color(0xFF25D366)),
                         SizedBox(width: 6),
-                        Text('WhatsApp पर बिल भेजें:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF15803D))),
+                        Text('Send Bill via WhatsApp:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Color(0xFF15803D))),
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -2516,7 +2516,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                         filled: true,
                         fillColor: Colors.white,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                        hintText: '10 अंकों का WhatsApp नंबर',
+                        hintText: '10-digit WhatsApp number',
                         prefixIcon: const Icon(Icons.phone, size: 16, color: Color(0xFF25D366)),
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: const BorderSide(color: Color(0xFF25D366))),
                         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide(color: Colors.grey.shade300)),
@@ -2532,7 +2532,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                           if (ph.isEmpty) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
-                                content: Text('कृपया 10 अंकों का WhatsApp नंबर दर्ज करें'),
+                                content: Text('Please enter 10-digit WhatsApp number'),
                                 backgroundColor: Colors.orange,
                                 behavior: SnackBarBehavior.floating,
                               ),
@@ -2554,7 +2554,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                           );
                         },
                         icon: const Icon(Icons.chat, size: 18, color: Colors.white),
-                        label: const Text('Send WhatsApp (व्हाट्सएप भेजें)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
+                        label: const Text('Send WhatsApp', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF25D366),
                           elevation: 1,

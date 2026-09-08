@@ -368,31 +368,31 @@ class WebPrinter {
       </div>
       
       <div class="calc-row total">
-        <span>Total Bill (कुल बिल):</span>
+        <span>Total Bill:</span>
         <span>₹${totalAmount.toStringAsFixed(2)}</span>
       </div>
 
       ${advanceAmount > 0 ? '''
       <div class="calc-row advance" style="margin-top: 8px;">
-        <span>Advance Paid (अग्रिम जमा):</span>
+        <span>Advance Paid:</span>
         <span>- ₹${advanceAmount.toStringAsFixed(2)}</span>
       </div>
       ''' : ''}
 
       ${advanceAmount > 0 && balanceCollectedAtCheckout > 0 ? '''
       <div class="calc-row paid">
-        <span>Paid at Checkout (चेकआउट भुगतान):</span>
+        <span>Paid at Checkout:</span>
         <span>₹${balanceCollectedAtCheckout.toStringAsFixed(2)}</span>
       </div>
       ''' : ''}
       
       <div class="calc-row" style="font-weight: 700; color: #0f172a; border-top: 1px solid #e2e8f0; padding-top: 6px; margin-top: 6px;">
-        <span>Total Paid (कुल प्राप्त):</span>
+        <span>Total Paid:</span>
         <span>₹${paidAmount.toStringAsFixed(2)}</span>
       </div>
 
       <div class="calc-row" style="color: ${balanceDue > 0 ? '#dc2626' : '#64748b'}; font-size: 12px; font-weight: ${balanceDue > 0 ? '700' : '400'};">
-        <span>Balance Due (बकाया):</span>
+        <span>Balance Due:</span>
         <span>₹${balanceDue.toStringAsFixed(2)}</span>
       </div>
     </div>
@@ -518,7 +518,7 @@ class WebPrinter {
     </table>
     <div class="divider"></div>
     <div style="display:flex; justify-content:space-between;" class="total-row">
-      <span>Grand Total (कुल):</span>
+      <span>Grand Total:</span>
       <span>₹${totalAmount.toStringAsFixed(2)}</span>
     </div>
     <div class="paid-tag">
@@ -635,7 +635,7 @@ class WebPrinter {
     </table>
     <div class="divider"></div>
     <div style="display:flex; justify-content:space-between;" class="total-row">
-      <span>Grand Total (कुल):</span>
+      <span>Grand Total:</span>
       <span>₹${totalAmount.toStringAsFixed(2)}</span>
     </div>
     <div class="paid-tag">

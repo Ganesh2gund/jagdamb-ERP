@@ -95,7 +95,7 @@ class _GuestCard extends StatelessWidget {
           Container(
             width: 48, height: 48,
             decoration: BoxDecoration(color: AppColors.primarySurface, shape: BoxShape.circle),
-            child: Center(child: Text(guest.name.substring(0, 1), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.primary, fontFamily: 'Inter'))),
+            child: Center(child: Text(guest.name.isNotEmpty ? guest.name.substring(0, 1) : 'G', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: AppColors.primary, fontFamily: 'Inter'))),
           ),
           const SizedBox(width: 14),
           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

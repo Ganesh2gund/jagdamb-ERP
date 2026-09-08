@@ -121,6 +121,7 @@ class AppRouter {
             path: '/check-out',
             builder: (context, state) => CheckOutScreen(
               bookingId: state.uri.queryParameters['bookingId'],
+              roomId: state.uri.queryParameters['roomId'],
             ),
           ),
           GoRoute(

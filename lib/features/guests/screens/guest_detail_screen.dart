@@ -50,7 +50,7 @@ class _GuestDetailScreenState extends State<GuestDetailScreen> {
           title: Text(g.name),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            tooltip: 'वापस जाएं (Back)',
+            tooltip: 'Back',
             onPressed: () => context.go('/guests'),
           ),
         ),
@@ -64,7 +64,7 @@ class _GuestDetailScreenState extends State<GuestDetailScreen> {
                 Container(
                   width: 64, height: 64,
                   decoration: BoxDecoration(color: AppColors.primarySurface, shape: BoxShape.circle),
-                  child: Center(child: Text(g.name.substring(0, 1), style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: AppColors.primary, fontFamily: 'Inter'))),
+                  child: Center(child: Text(g.name.isNotEmpty ? g.name.substring(0, 1) : 'G', style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: AppColors.primary, fontFamily: 'Inter'))),
                 ),
                 const SizedBox(width: 16),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

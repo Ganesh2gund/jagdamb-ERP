@@ -70,7 +70,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
           title: const Text('Check-in'),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            tooltip: 'वापस जाएं (Back)',
+            tooltip: 'Back',
             onPressed: () {
               if (_step == 1) {
                 setState(() => _step = 0);
@@ -100,10 +100,10 @@ class _CheckInScreenState extends State<CheckInScreen> {
                 child: const Icon(Icons.login, color: AppColors.available, size: 36),
               ),
               const SizedBox(height: 16),
-              const Text('कोई पेंडिंग एडवांस चेक-इन नहीं है', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, fontFamily: 'Inter')),
+              const Text('No pending advance check-ins', style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold, fontFamily: 'Inter')),
               const SizedBox(height: 8),
               const Text(
-                'अगर नया गेस्ट अभी आया है, तो नीचे बटन से तुरंत कमरा दें:',
+                'If a guest is checking in right now, tap below to assign a room:',
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 13, color: AppColors.textSecondary, fontFamily: 'Inter'),
               ),
@@ -120,7 +120,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
                   ),
                   onPressed: () => context.go('/bookings/new?checkInNow=true'),
                   icon: const Icon(Icons.add_circle_outline),
-                  label: const Text('➕ नया तुरंत चेक-इन (Walk-in Check-in)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  label: const Text('New Walk-in Check-in', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 ),
               ),
             ],
@@ -137,7 +137,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('एडवांस बुकिंग्स:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, fontFamily: 'Inter')),
+              const Text('Advance Bookings:', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, fontFamily: 'Inter')),
               ElevatedButton.icon(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.available,
@@ -147,7 +147,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
                 ),
                 onPressed: () => context.go('/bookings/new?checkInNow=true'),
                 icon: const Icon(Icons.add, size: 16),
-                label: const Text('नया Walk-in', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+                label: const Text('New Walk-in', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
               ),
             ],
           ),

@@ -93,7 +93,7 @@ class _StaffScreenState extends State<StaffScreen>
             Container(
               width: 48, height: 48,
               decoration: BoxDecoration(color: deptColor.withOpacity(0.12), shape: BoxShape.circle),
-              child: Center(child: Text(s.name.substring(0, 1), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: deptColor, fontFamily: 'Inter'))),
+              child: Center(child: Text(s.name.isNotEmpty ? s.name.substring(0, 1) : 'S', style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: deptColor, fontFamily: 'Inter'))),
             ),
             const SizedBox(width: 14),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

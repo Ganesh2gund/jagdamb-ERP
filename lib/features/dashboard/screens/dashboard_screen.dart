@@ -131,9 +131,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('होटल का नाम बदलें', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, fontFamily: 'Inter')),
+                      Text('Edit Hotel Name', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, fontFamily: 'Inter')),
                       SizedBox(height: 2),
-                      Text('यह नाम सभी रसीदों और रिपोर्ट्स पर दिखेगा', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                      Text('This name will appear on all invoices and reports', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                     ],
                   ),
                 ),
@@ -143,13 +143,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(height: 16),
             const Divider(height: 1),
             const SizedBox(height: 16),
-            const Text('होटल का नया नाम (Hotel Name)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+            const Text('Hotel Name', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             TextField(
               controller: ctrl,
               autofocus: true,
               decoration: InputDecoration(
-                hintText: 'उदा. Shree Ram Hotel & Restaurant',
+                hintText: 'e.g. Hotel Jagdamb Palace',
                 prefixIcon: const Icon(Icons.hotel_rounded, color: AppColors.primary),
                 filled: true,
                 fillColor: AppColors.grey50,
@@ -182,7 +182,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   if (mounted) {
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('✅ होटल का नाम "$newName" अपडेट हो गया!'),
+                        content: Text('Hotel name updated to "$newName"!'),
                         backgroundColor: AppColors.success,
                         behavior: SnackBarBehavior.floating,
                       ),
@@ -190,7 +190,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   }
                 },
                 icon: const Icon(Icons.check_circle_outline, size: 20),
-                label: const Text('अपडेट करें (Save Name)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+                label: const Text('Save Name', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
@@ -692,7 +692,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             _QuickActionButton(
               icon: Icons.local_cafe_outlined,
-              label: 'Cafe (कैफे)',
+              label: 'Cafe',
               color: const Color(0xFFD97706),
               onTap: () => context.go('/cafe'),
             ),
@@ -710,7 +710,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
             _QuickActionButton(
               icon: Icons.celebration_outlined,
-              label: 'Banquet (हॉल)',
+              label: 'Banquet Hall',
               color: AppColors.primary,
               onTap: () => context.push('/banquet'),
             ),

@@ -105,9 +105,9 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('स्टे आगे बढ़ाएं (Extend Stay)', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, fontFamily: 'Inter')),
+                          Text('Extend Stay', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, fontFamily: 'Inter')),
                           SizedBox(height: 2),
-                          Text('गेस्ट के रुकने की तारीख और किराया बढ़ाएं', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                          Text('Extend guest checkout date and room tariff', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                         ],
                       ),
                     ),
@@ -132,7 +132,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('कमरा संख्या (Room):', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                          const Text('Room:', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
                           Text('Room ${b.roomNumber} (${b.roomType})', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
                         ],
                       ),
@@ -140,7 +140,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('वर्तमान चेक-आउट (Current):', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                          const Text('Current Check-out:', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
                           Text(AppFormatters.formatDate(b.checkOut), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                         ],
                       ),
@@ -148,7 +148,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('नया चेक-आउट (New Checkout):', style: TextStyle(fontSize: 13, color: AppColors.primary, fontWeight: FontWeight.w600)),
+                          const Text('New Check-out:', style: TextStyle(fontSize: 13, color: AppColors.primary, fontWeight: FontWeight.w600)),
                           Text(
                             AppFormatters.formatDate(newCheckOut),
                             style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.primary),
@@ -159,7 +159,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text('अतिरिक्त किराया (+Cost):', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                          const Text('Additional Tariff (+Cost):', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
                           Text('₹${extraCost.toStringAsFixed(0)}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.success)),
                         ],
                       ),
@@ -167,7 +167,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                   ),
                 ),
                 const SizedBox(height: 18),
-                const Text('कितने दिन बढ़ाना है? (Select Additional Days)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                const Text('Select Additional Days', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 10),
                 Row(
                   children: [1, 2, 3, 5].map((nights) {
@@ -215,7 +215,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                             if (res['success'] == true) {
                               messenger.showSnackBar(
                                 SnackBar(
-                                  content: Text('✅ स्टे सफलतापूर्वक बढ़ गया (+ $additionalNights दिन)! नया चेकआउट: ${AppFormatters.formatDate(newCheckOut)}'),
+                                  content: Text('✅ Stay extended successfully (+ $additionalNights day(s))! New check-out: ${AppFormatters.formatDate(newCheckOut)}'),
                                   backgroundColor: AppColors.success,
                                   behavior: SnackBarBehavior.floating,
                                 ),
@@ -234,7 +234,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                     child: isExtending
                         ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
                         : Text(
-                            'तारीख आगे बढ़ाएं (+₹${extraCost.toStringAsFixed(0)})',
+                            'Extend Stay (+₹${extraCost.toStringAsFixed(0)})',
                             style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                           ),
                   ),
@@ -287,9 +287,9 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('बुकिंग रद्द करें (Cancel Booking)', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, fontFamily: 'Inter')),
+                      Text('Cancel Booking', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, fontFamily: 'Inter')),
                       SizedBox(height: 2),
-                      Text('कमरा तुरंत वापस उपलब्ध (Available) हो जाएगा', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                      Text('Room will be immediately released and marked Available', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                     ],
                   ),
                 ),
@@ -299,14 +299,14 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
             const SizedBox(height: 16),
             const Divider(height: 1),
             const SizedBox(height: 16),
-            const Text('रद्द करने का कारण (Cancellation Reason)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+            const Text('Cancellation Reason', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
             const SizedBox(height: 8),
             TextField(
               controller: reasonController,
               maxLines: 2,
               autofocus: true,
               decoration: InputDecoration(
-                hintText: 'उदा. गेस्ट ने यात्रा रद्द की / इमरजेंसी',
+                hintText: 'e.g. Guest cancelled trip / Emergency',
                 prefixIcon: const Icon(Icons.edit_note, color: AppColors.error),
                 filled: true,
                 fillColor: AppColors.grey50,
@@ -327,7 +327,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                         side: const BorderSide(color: AppColors.border),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      child: const Text('रखें (Keep Booking)', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
+                      child: const Text('Keep Booking', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary)),
                     ),
                   ),
                 ),
@@ -343,7 +343,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         elevation: 0,
                       ),
-                      child: const Text('रद्द करें (Cancel)', style: TextStyle(fontWeight: FontWeight.w700)),
+                      child: const Text('Cancel Booking', style: TextStyle(fontWeight: FontWeight.w700)),
                     ),
                   ),
                 ),
@@ -409,7 +409,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const Text(
-                    'पेमेंट प्राप्त करें (Collect Payment)',
+                    'Collect Payment',
                     style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Inter'),
                   ),
                   IconButton(
@@ -430,13 +430,13 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('अतिथि: ${b.guestName}', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
-                    Text('कमरा: ${b.roomNumber}', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.primary)),
+                    Text('Guest: ${b.guestName}', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                    Text('Room: ${b.roomNumber}', style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.primary)),
                   ],
                 ),
               ),
               const SizedBox(height: 16),
-              const Text('जमा की जाने वाली राशि (Amount)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+              const Text('Amount to Collect', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               TextField(
                 controller: amountController,
@@ -453,7 +453,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                 ),
               ),
               const SizedBox(height: 14),
-              const Text('भुगतान का माध्यम (Payment Mode)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+              const Text('Payment Mode', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               Row(
                 children: ['Cash', 'UPI', 'Card'].map((mode) {
@@ -464,7 +464,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                       child: GestureDetector(
                         onTap: () => setSheetState(() => paymentMode = mode),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 10),
+                           padding: const EdgeInsets.symmetric(vertical: 10),
                           decoration: BoxDecoration(
                             color: isSel ? AppColors.primary : AppColors.grey50,
                             borderRadius: BorderRadius.circular(10),
@@ -497,7 +497,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                   ),
                   onPressed: () => Navigator.pop(ctx, true),
                   icon: const Icon(Icons.check_circle_outline, size: 20),
-                  label: const Text('पेमेंट जमा करें (Confirm Payment)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                  label: const Text('Confirm Payment', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
                 ),
               ),
             ],
@@ -516,7 +516,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('₹${collected.toStringAsFixed(0)} ($paymentMode) पेमेंट सफलता से जमा हुआ!'),
+          content: Text('₹${collected.toStringAsFixed(0)} ($paymentMode) payment collected successfully!'),
           backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
         ),
@@ -544,7 +544,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
           title: Text('Booking #${b.id.substring(0, b.id.length > 8 ? 8 : b.id.length).toUpperCase()}'),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            tooltip: 'वापस जाएं (Back to Bookings)',
+            tooltip: 'Back to Bookings',
             onPressed: () => context.go('/bookings'),
           ),
         actions: [
@@ -665,7 +665,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                   children: [
                     const Expanded(
                       child: Text(
-                        'भुगतान विवरण (Payment Details)',
+                        'Payment Details',
                         style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, fontFamily: 'Inter'),
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -681,8 +681,8 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                       ),
                       child: Text(
                         b.paymentStatus == PaymentStatus.paid
-                            ? 'पूर्ण भुगतान (Paid)'
-                            : (b.paidAmount > 0 ? 'अग्रिम जमा (Advance)' : 'बाकी (Pending)'),
+                            ? 'Paid'
+                            : (b.paidAmount > 0 ? 'Advance' : 'Pending'),
                         style: TextStyle(
                           fontSize: 11,
                           fontWeight: FontWeight.w700,
@@ -695,10 +695,10 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                   ],
                 ),
                 const SizedBox(height: 12),
-                InfoRow(label: 'कमरा किराया (Total)', value: AppFormatters.formatCurrency(b.totalAmount)),
-                InfoRow(label: 'अग्रिम जमा (Advance)', value: AppFormatters.formatCurrency(b.paidAmount), valueColor: AppColors.success),
+                InfoRow(label: 'Room Tariff (Total)', value: AppFormatters.formatCurrency(b.totalAmount)),
+                InfoRow(label: 'Advance Paid', value: AppFormatters.formatCurrency(b.paidAmount), valueColor: AppColors.success),
                 if (b.pendingAmount > 0)
-                  InfoRow(label: 'बाकी रकम (Pending)', value: AppFormatters.formatCurrency(b.pendingAmount), valueColor: AppColors.error),
+                  InfoRow(label: 'Balance Due (Pending)', value: AppFormatters.formatCurrency(b.pendingAmount), valueColor: AppColors.error),
                 if (b.pendingAmount > 0 && b.status != BookingStatus.cancelled) ...[
                   const SizedBox(height: 12),
                   SizedBox(
@@ -713,7 +713,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                       onPressed: () => _collectPaymentSheet(b),
                       icon: const Icon(Icons.payments_outlined, size: 18),
                       label: Text(
-                        '💰 बकाया ₹${b.pendingAmount.toStringAsFixed(0)} जमा करें (Collect)',
+                        '💰 Collect Due ₹${b.pendingAmount.toStringAsFixed(0)}',
                         style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
                       ),
                     ),
@@ -773,7 +773,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                   onPressed: () => _showExtendStaySheet(b),
                   icon: const Icon(Icons.more_time_rounded, size: 20),
                   label: const Text(
-                    '🛌 Extend Stay (+1 Day / तारीख बढ़ाएं)',
+                    '🛌 Extend Stay (+1 Day)',
                     style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
                   ),
                   style: ElevatedButton.styleFrom(
@@ -791,7 +791,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                   onPressed: () => context.go('/check-out?bookingId=${b.id}'),
                   icon: const Icon(Icons.logout, size: 20),
                   label: const Text(
-                    '🚪 Check-out & Settle Bill (चेकआउट और बिल)',
+                    '🚪 Check-out & Settle Bill',
                     style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                   ),
                   style: ElevatedButton.styleFrom(
@@ -808,7 +808,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                 child: OutlinedButton.icon(
                   onPressed: () => context.go('/billing/${b.id}'),
                   icon: const Icon(Icons.receipt_long, size: 18),
-                  label: const Text('📄 View / Print Invoice (बिल देखें)'),
+                  label: const Text('📄 View / Print Invoice'),
                 ),
               ),
               const SizedBox(height: 10),

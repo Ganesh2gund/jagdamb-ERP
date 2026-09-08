@@ -145,7 +145,7 @@ class _LoginScreenState extends State<LoginScreen>
                           ),
                           const SizedBox(height: 14),
                           const Text(
-                            'हॉटेल जगदंब पॅलेस',
+                            'Hotel Jagdamb Palace',
                             style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w900,

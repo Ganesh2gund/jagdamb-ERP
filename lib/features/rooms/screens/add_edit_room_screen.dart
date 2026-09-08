@@ -131,7 +131,7 @@ class _AddEditRoomScreenState extends State<AddEditRoomScreen> {
           title: Text(_isEditMode ? 'Edit Room ${widget.existingRoom!.number}' : 'Add New Room'),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            tooltip: 'वापस जाएं (Back to Rooms)',
+            tooltip: 'Back to Rooms',
             onPressed: () => context.go('/rooms'),
           ),
         actions: [

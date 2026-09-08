@@ -197,7 +197,7 @@ class _EditBookingScreenState extends State<EditBookingScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: Text('Edit Booking #${widget.bookingId.substring(0, 8).toUpperCase()}'),
+        title: Text('Edit Booking #${widget.bookingId.substring(0, widget.bookingId.length > 8 ? 8 : widget.bookingId.length).toUpperCase()}'),
         actions: [
           TextButton.icon(
             onPressed: _isSaving ? null : _saveBooking,
@@ -286,25 +286,35 @@ class _EditBookingScreenState extends State<EditBookingScreen> {
                         Expanded(
                           child: InkWell(
                             onTap: () => _selectDate(true),
+                            borderRadius: BorderRadius.circular(10),
                             child: InputDecorator(
                               decoration: const InputDecoration(
                                 labelText: 'Check-In',
-                                prefixIcon: Icon(Icons.calendar_today, size: 18),
+                                prefixIcon: Icon(Icons.calendar_today, size: 16),
+                                contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                               ),
-                              child: Text(AppFormatters.formatDate(_checkIn), style: const TextStyle(fontWeight: FontWeight.w600)),
+                              child: Text(
+                                AppFormatters.formatDate(_checkIn),
+                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                              ),
                             ),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: InkWell(
                             onTap: () => _selectDate(false),
+                            borderRadius: BorderRadius.circular(10),
                             child: InputDecorator(
                               decoration: const InputDecoration(
                                 labelText: 'Check-Out',
-                                prefixIcon: Icon(Icons.calendar_month, size: 18),
+                                prefixIcon: Icon(Icons.calendar_month, size: 16),
+                                contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                               ),
-                              child: Text(AppFormatters.formatDate(_checkOut), style: const TextStyle(fontWeight: FontWeight.w600)),
+                              child: Text(
+                                AppFormatters.formatDate(_checkOut),
+                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                              ),
                             ),
                           ),
                         ),
@@ -315,52 +325,110 @@ class _EditBookingScreenState extends State<EditBookingScreen> {
                       'Duration: $_nights Day(s)',
                       style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w600),
                     ),
-                    const SizedBox(height: 16),
+                    const SizedBox(height: 14),
 
-                    // Guests Count
+                    // Guests Count (Vertical compact cards - fits any screen from 280px to 4K)
                     Row(
                       children: [
                         Expanded(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text('Adults:', style: TextStyle(fontWeight: FontWeight.w600)),
-                              Row(
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.remove_circle_outline),
-                                    onPressed: _adults > 1 ? () => setState(() => _adults--) : null,
-                                  ),
-                                  Text('$_adults', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-                                  IconButton(
-                                    icon: const Icon(Icons.add_circle_outline),
-                                    onPressed: _adults < 10 ? () => setState(() => _adults++) : null,
-                                  ),
-                                ],
-                              ),
-                            ],
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceVariant.withOpacity(0.4),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Adults', style: TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
+                                const SizedBox(height: 6),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    InkWell(
+                                      onTap: _adults > 1 ? () => setState(() => _adults--) : null,
+                                      borderRadius: BorderRadius.circular(14),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(2),
+                                        child: Icon(
+                                          Icons.remove_circle_outline,
+                                          size: 20,
+                                          color: _adults > 1 ? AppColors.primary : AppColors.textTertiary,
+                                        ),
+                                      ),
+                                    ),
+                                    Text(
+                                      '$_adults',
+                                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                                    ),
+                                    InkWell(
+                                      onTap: _adults < 10 ? () => setState(() => _adults++) : null,
+                                      borderRadius: BorderRadius.circular(14),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(2),
+                                        child: Icon(
+                                          Icons.add_circle_outline,
+                                          size: 20,
+                                          color: _adults < 10 ? AppColors.primary : AppColors.textTertiary,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 10),
                         Expanded(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text('Children:', style: TextStyle(fontWeight: FontWeight.w600)),
-                              Row(
-                                children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.remove_circle_outline),
-                                    onPressed: _children > 0 ? () => setState(() => _children--) : null,
-                                  ),
-                                  Text('$_children', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-                                  IconButton(
-                                    icon: const Icon(Icons.add_circle_outline),
-                                    onPressed: _children < 8 ? () => setState(() => _children++) : null,
-                                  ),
-                                ],
-                              ),
-                            ],
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: AppColors.surfaceVariant.withOpacity(0.4),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: AppColors.border),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text('Children', style: TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w600)),
+                                const SizedBox(height: 6),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    InkWell(
+                                      onTap: _children > 0 ? () => setState(() => _children--) : null,
+                                      borderRadius: BorderRadius.circular(14),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(2),
+                                        child: Icon(
+                                          Icons.remove_circle_outline,
+                                          size: 20,
+                                          color: _children > 0 ? AppColors.primary : AppColors.textTertiary,
+                                        ),
+                                      ),
+                                    ),
+                                    Text(
+                                      '$_children',
+                                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                                    ),
+                                    InkWell(
+                                      onTap: _children < 8 ? () => setState(() => _children++) : null,
+                                      borderRadius: BorderRadius.circular(14),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(2),
+                                        child: Icon(
+                                          Icons.add_circle_outline,
+                                          size: 20,
+                                          color: _children < 8 ? AppColors.primary : AppColors.textTertiary,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ],
@@ -383,20 +451,22 @@ class _EditBookingScreenState extends State<EditBookingScreen> {
                           child: TextFormField(
                             controller: _totalAmountController,
                             decoration: const InputDecoration(
-                              labelText: 'Total Tariff (₹)',
-                              prefixIcon: Icon(Icons.currency_rupee),
+                              labelText: 'Total (₹)',
+                              prefixIcon: Icon(Icons.currency_rupee, size: 18),
+                              contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                             ),
                             keyboardType: TextInputType.number,
                             validator: (v) => v == null || double.tryParse(v) == null ? 'Enter valid amount' : null,
                           ),
                         ),
-                        const SizedBox(width: 12),
+                        const SizedBox(width: 10),
                         Expanded(
                           child: TextFormField(
                             controller: _paidAmountController,
                             decoration: const InputDecoration(
-                              labelText: 'Paid Amount (₹)',
-                              prefixIcon: Icon(Icons.check_circle_outline),
+                              labelText: 'Paid (₹)',
+                              prefixIcon: Icon(Icons.check_circle_outline, size: 18),
+                              contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
                             ),
                             keyboardType: TextInputType.number,
                             validator: (v) => v == null || double.tryParse(v) == null ? 'Enter valid amount' : null,

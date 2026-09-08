@@ -118,7 +118,7 @@ class WhatsAppSendChip extends StatelessWidget {
             SizedBox(width: 8),
             Flexible(
               child: Text(
-                'Send WhatsApp (व्हाट्सएप)',
+                'Send WhatsApp',
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: Colors.white,

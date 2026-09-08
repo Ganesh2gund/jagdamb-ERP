@@ -66,7 +66,7 @@ class _BanquetScreenState extends State<BanquetScreen> with SingleTickerProvider
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Banquet & Events (बैंक्वेट हॉल)'),
+        title: const Text('Banquet & Events'),
         backgroundColor: AppColors.surface,
         actions: [
           IconButton(
@@ -449,7 +449,7 @@ class _BanquetScreenState extends State<BanquetScreen> with SingleTickerProvider
         padding: const EdgeInsets.all(16),
         children: [
           const Text(
-            'Banquet Halls Setup (हॉल मास्टर)',
+            'Banquet Halls Setup',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
           ),
           const SizedBox(height: 4),
@@ -573,7 +573,7 @@ class _BanquetScreenState extends State<BanquetScreen> with SingleTickerProvider
         padding: const EdgeInsets.all(16),
         children: [
           const Text(
-            'Catering & Menu Packages (कैटरिंग पैकेज)',
+            'Catering & Menu Packages',
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
           ),
           const SizedBox(height: 4),
@@ -670,7 +670,7 @@ class _BanquetScreenState extends State<BanquetScreen> with SingleTickerProvider
     await showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Add Banquet Hall (हॉल जोड़ें)'),
+        title: const Text('Add Banquet Hall'),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,

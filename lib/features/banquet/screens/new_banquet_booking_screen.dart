@@ -34,19 +34,19 @@ class _NewBanquetBookingScreenState extends State<NewBanquetBookingScreen> {
   // Selections
   BanquetHall? _selectedHall;
   BanquetPackage? _selectedPackage;
-  String _eventType = 'Wedding (शादी)';
+  String _eventType = 'Wedding';
   DateTime _eventDate = DateTime.now().add(const Duration(days: 7));
   String _slot = 'Evening';
   String _paymentMode = 'Cash';
 
   final List<String> _eventTypes = [
-    'Wedding (शादी)',
-    'Reception (रिसेप्शन)',
-    'Birthday (जन्मदिन)',
-    'Corporate Event (कॉर्पोरेट)',
-    'Anniversary (सालगिरह)',
-    'Engagement (सगाई)',
-    'Other Function (अन्य उत्सव)',
+    'Wedding',
+    'Reception',
+    'Birthday',
+    'Corporate Event',
+    'Anniversary',
+    'Engagement',
+    'Other Function',
   ];
 
   @override
@@ -165,7 +165,7 @@ class _NewBanquetBookingScreenState extends State<NewBanquetBookingScreen> {
     if (_slotAvailability[_slot] == false) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('⚠️ यह स्लॉट ($_slot) इस तारीख के लिए पहले से बुक है! कृपया दूसरा स्लॉट चुनें।'),
+          content: Text('⚠️ This slot ($_slot) is already booked for this date! Please choose another slot.'),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
         ),
@@ -244,7 +244,7 @@ class _NewBanquetBookingScreenState extends State<NewBanquetBookingScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('New Banquet Booking (नई बुकिंग)'),
+        title: const Text('New Banquet Booking'),
       ),
       body: Form(
         key: _formKey,
@@ -260,7 +260,7 @@ class _NewBanquetBookingScreenState extends State<NewBanquetBookingScreen> {
                     children: [
                       Icon(Icons.person_outline, size: 20, color: AppColors.primary),
                       SizedBox(width: 8),
-                      Text('Client Information (ग्राहक विवरण)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, fontFamily: 'Inter')),
+                      Text('Client Information', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, fontFamily: 'Inter')),
                     ],
                   ),
                   const SizedBox(height: 14),
@@ -268,7 +268,7 @@ class _NewBanquetBookingScreenState extends State<NewBanquetBookingScreen> {
                     controller: _nameCtrl,
                     decoration: const InputDecoration(
                       labelText: 'Customer / Host Name *',
-                      hintText: 'उदा. Rajesh Patil',
+                      hintText: 'e.g. Rajesh Patil',
                       prefixIcon: Icon(Icons.person, size: 20),
                     ),
                     validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter customer name' : null,
@@ -298,7 +298,7 @@ class _NewBanquetBookingScreenState extends State<NewBanquetBookingScreen> {
                     children: [
                       Icon(Icons.celebration_outlined, size: 20, color: AppColors.primary),
                       SizedBox(width: 8),
-                      Text('Event & Venue Details (इवेंट व हॉल)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, fontFamily: 'Inter')),
+                      Text('Event & Venue Details', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, fontFamily: 'Inter')),
                     ],
                   ),
                   const SizedBox(height: 14),
@@ -332,7 +332,7 @@ class _NewBanquetBookingScreenState extends State<NewBanquetBookingScreen> {
                     initialValue: _eventTypes.contains(_eventType) ? _eventType : _eventTypes.first,
                     isExpanded: true,
                     decoration: const InputDecoration(
-                      labelText: 'Event Type (इवेंट का प्रकार)',
+                      labelText: 'Event Type',
                       prefixIcon: Icon(Icons.event_outlined, size: 20),
                     ),
                     items: _eventTypes.map((t) {
@@ -382,7 +382,7 @@ class _NewBanquetBookingScreenState extends State<NewBanquetBookingScreen> {
                   const SizedBox(height: 14),
                   Row(
                     children: [
-                      const Text('Slot Selection (समय स्लॉट):', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                      const Text('Slot Selection:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
                       if (_isCheckingSlots) ...[
                         const SizedBox(width: 8),
                         const SizedBox(
@@ -396,11 +396,11 @@ class _NewBanquetBookingScreenState extends State<NewBanquetBookingScreen> {
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      _slotChip('Morning', 'सुबह (8 AM - 3 PM)'),
+                      _slotChip('Morning', '8 AM - 3 PM'),
                       const SizedBox(width: 8),
-                      _slotChip('Evening', 'शाम (4 PM - 11 PM)'),
+                      _slotChip('Evening', '4 PM - 11 PM'),
                       const SizedBox(width: 8),
-                      _slotChip('Full Day', 'पूरा दिन (Full Day)'),
+                      _slotChip('Full Day', 'Full Day'),
                     ],
                   ),
                 ],
@@ -417,7 +417,7 @@ class _NewBanquetBookingScreenState extends State<NewBanquetBookingScreen> {
                     children: [
                       Icon(Icons.restaurant_menu, size: 20, color: Color(0xFFD97706)),
                       SizedBox(width: 8),
-                      Text('Catering & Guests (केटरिंग व अतिथि)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, fontFamily: 'Inter')),
+                      Text('Catering & Guests', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, fontFamily: 'Inter')),
                     ],
                   ),
                   const SizedBox(height: 14),
@@ -431,7 +431,7 @@ class _NewBanquetBookingScreenState extends State<NewBanquetBookingScreen> {
                     items: [
                       const DropdownMenuItem(
                         value: null,
-                        child: Text('No Catering (हॉल रेंट केवल)', overflow: TextOverflow.ellipsis, maxLines: 1),
+                        child: Text('No Catering (Hall Rent Only)', overflow: TextOverflow.ellipsis, maxLines: 1),
                       ),
                       ..._packages.map((p) {
                         return DropdownMenuItem(
@@ -484,8 +484,8 @@ class _NewBanquetBookingScreenState extends State<NewBanquetBookingScreen> {
                     controller: _notesCtrl,
                     maxLines: 2,
                     decoration: const InputDecoration(
-                      labelText: 'Special Notes / Decoration Requests (वैकल्पिक)',
-                      hintText: 'उदा. स्टेज डेकोरेशन, साउंड सिस्टम, वरमाला',
+                      labelText: 'Special Notes / Decoration Requests (Optional)',
+                      hintText: 'e.g. Stage decoration, sound system, flower garland',
                       prefixIcon: Icon(Icons.note_alt_outlined, size: 20),
                     ),
                   ),
@@ -503,23 +503,23 @@ class _NewBanquetBookingScreenState extends State<NewBanquetBookingScreen> {
                     children: [
                       Icon(Icons.receipt_long_outlined, size: 20, color: AppColors.primary),
                       SizedBox(width: 8),
-                      Text('Billing & Payment (बिल व एडवांस भुगतान)', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, fontFamily: 'Inter')),
+                      Text('Billing & Payment', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, fontFamily: 'Inter')),
                     ],
                   ),
                   const SizedBox(height: 14),
-                  InfoRow(label: 'हॉल बेस किराया ($_slot):', value: AppFormatters.formatCurrency(_hallRent)),
+                  InfoRow(label: 'Hall Base Tariff ($_slot):', value: AppFormatters.formatCurrency(_hallRent)),
                   if (_selectedPackage != null)
                     InfoRow(
-                      label: 'केटरिंग भोजन ($_expectedGuests × ₹${_pricePerPlate.toStringAsFixed(0)}):',
+                      label: 'Catering Food ($_expectedGuests × ₹${_pricePerPlate.toStringAsFixed(0)}):',
                       value: AppFormatters.formatCurrency(_foodTotal),
                     ),
                   if (_extraCharges > 0)
-                    InfoRow(label: 'डेकोरेशन व अन्य:', value: AppFormatters.formatCurrency(_extraCharges)),
+                    InfoRow(label: 'Decoration & Extras:', value: AppFormatters.formatCurrency(_extraCharges)),
                   const Divider(height: 20),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      const Text('कुल राशि (Grand Total):', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
+                      const Text('Grand Total:', style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold)),
                       Text(
                         AppFormatters.formatCurrency(_grandTotal),
                         style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.primary),
@@ -531,7 +531,7 @@ class _NewBanquetBookingScreenState extends State<NewBanquetBookingScreen> {
                     controller: _advanceCtrl,
                     keyboardType: TextInputType.number,
                     decoration: InputDecoration(
-                      labelText: 'Advance Paid (जमा एडवांस राशि) *',
+                      labelText: 'Advance Paid *',
                       prefixText: '₹ ',
                       prefixStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       filled: true,
@@ -570,7 +570,7 @@ class _NewBanquetBookingScreenState extends State<NewBanquetBookingScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          _balanceDue > 0 ? 'बकाया राशि (Balance Due):' : 'भुगतान स्थिति (Status):',
+                          _balanceDue > 0 ? 'Balance Due:' : 'Status:',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 13,
@@ -578,7 +578,7 @@ class _NewBanquetBookingScreenState extends State<NewBanquetBookingScreen> {
                           ),
                         ),
                         Text(
-                          _balanceDue > 0 ? AppFormatters.formatCurrency(_balanceDue) : '✓ पूरा भुगतान (Paid)',
+                          _balanceDue > 0 ? AppFormatters.formatCurrency(_balanceDue) : '✓ Paid',
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 15,
@@ -602,7 +602,7 @@ class _NewBanquetBookingScreenState extends State<NewBanquetBookingScreen> {
                     ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                     : const Icon(Icons.check_circle_outline, size: 22),
                 label: Text(
-                  _isSubmitting ? 'बुकिंग प्रोसेस हो रही है...' : 'बैंक्वेट बुकिंग कन्फर्म करें (Confirm Booking)',
+                  _isSubmitting ? 'Processing booking...' : 'Confirm Booking',
                   style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                 ),
                 style: ElevatedButton.styleFrom(
@@ -657,7 +657,7 @@ class _NewBanquetBookingScreenState extends State<NewBanquetBookingScreen> {
               if (!isAvailable) ...[
                 const SizedBox(height: 2),
                 const Text(
-                  'बुक है (Booked)',
+                  'Booked',
                   style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.error),
                 ),
               ],

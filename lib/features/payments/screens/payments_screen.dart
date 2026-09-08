@@ -110,7 +110,7 @@ class _PaymentsScreenState extends State<PaymentsScreen>
             Container(
               width: 48, height: 48,
               decoration: BoxDecoration(color: color.withOpacity(0.12), shape: BoxShape.circle),
-              child: Center(child: Text(b.guestName.substring(0, 1), style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: color, fontFamily: 'Inter'))),
+              child: Center(child: Text(b.guestName.isNotEmpty ? b.guestName.substring(0, 1) : 'G', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: color, fontFamily: 'Inter'))),
             ),
             const SizedBox(width: 14),
             Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [

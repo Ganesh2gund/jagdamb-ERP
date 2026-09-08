@@ -376,14 +376,21 @@ class MongoBackedStore {
   }
 
   createBooking(bookingPayload) {
+    const timestamp = Date.now();
+    let generatedId = bookingPayload.id || `b_${timestamp}`;
+    if (this.data.bookings.some(b => b.id === generatedId)) {
+      generatedId = `b_${timestamp}_${Math.floor(Math.random() * 1000)}`;
+    }
+
     const newBooking = {
-      id: 'b' + (this.data.bookings.length + 1),
+      id: generatedId,
       bookingNumber: `BK-2026-${String(this.data.bookings.length + 1).padStart(3, '0')}`,
       createdAt: new Date().toISOString(),
       status: 'confirmed',
       paymentStatus: 'pending',
       ...bookingPayload,
     };
+    newBooking.id = generatedId;
     this.data.bookings.unshift(newBooking);
 
     // Only mark room as 'reserved' if the check-in is TODAY or in the past.
@@ -399,9 +406,12 @@ class MongoBackedStore {
       }
     }
 
-
     if (this.isConnected()) {
-      Booking.create(newBooking).catch(e => console.error('Error creating booking in Mongo:', e.message));
+      Booking.findOneAndUpdate(
+        { id: newBooking.id },
+        newBooking,
+        { upsert: true, new: true }
+      ).catch(e => console.error('Error creating booking in Mongo:', e.message));
     }
 
     return newBooking;

@@ -288,10 +288,10 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
       child: Scaffold(
         backgroundColor: AppColors.background,
         appBar: AppBar(
-          title: Text(_checkInNow ? 'Check-in Guest (नया चेक-इन)' : 'Advance Booking (एडवांस बुकिंग)'),
+          title: Text(_checkInNow ? 'Check-in Guest' : 'Advance Booking'),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back),
-            tooltip: 'वापस जाएं (Back)',
+            tooltip: 'Back',
             onPressed: () => context.go('/rooms'),
           ),
         ),
@@ -334,7 +334,7 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
                             const SizedBox(width: 6),
                             Flexible(
                               child: Text(
-                                'तुरंत चेक-इन (Walk-in)',
+                                'Walk-in Check-in',
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   fontSize: 12,
@@ -370,7 +370,7 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
                             const SizedBox(width: 6),
                             Flexible(
                               child: Text(
-                                'एडवांस बुकिंग (Future)',
+                                'Advance Booking',
                                 overflow: TextOverflow.ellipsis,
                                 style: TextStyle(
                                   fontSize: 12,
@@ -401,7 +401,7 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
                     items: const [
                       DropdownMenuItem<Guest?>(
                         value: null,
-                        child: Text('New Guest (नया गेस्ट)', overflow: TextOverflow.ellipsis),
+                        child: Text('New Guest', overflow: TextOverflow.ellipsis),
                       ),
                     ],
                     onChanged: (g) => setState(() => _selectedGuest = g),
@@ -543,12 +543,12 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
 
             // ── Payment Section ─────────────────────
             _SectionCard(
-              title: '💰 भुगतान का तरीका (Payment Option)',
+              title: 'Payment Option',
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'पेमेंट कब मिलेगा? (Select Payment Timing):',
+                    'Payment Timing / Advance:',
                     style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, fontFamily: 'Inter'),
                   ),
                   const SizedBox(height: 10),
@@ -588,7 +588,7 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
                                 ),
                                 const SizedBox(height: 6),
                                 const Text(
-                                  'पूरा पेमेंट मिला\n(Full Paid)',
+                                  'Full Payment\n(Paid in Full)',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, fontFamily: 'Inter'),
                                 ),
@@ -633,7 +633,7 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
                                 ),
                                 const SizedBox(height: 6),
                                 const Text(
-                                  'कुछ एडवांस\n(Partial)',
+                                  'Partial Advance\n(Deposit)',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, fontFamily: 'Inter'),
                                 ),
@@ -673,7 +673,7 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
                                 ),
                                 const SizedBox(height: 6),
                                 const Text(
-                                  'चेकआउट पर देंगे\n(At Checkout)',
+                                  'Pay at Checkout\n(Zero Advance)',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, fontFamily: 'Inter'),
                                 ),
@@ -690,7 +690,7 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
                     controller: _advanceAmountController,
                     keyboardType: TextInputType.number,
                     decoration: const InputDecoration(
-                      labelText: 'अभी जमा हुई राशि (Amount Received Now)',
+                      labelText: 'Advance Amount Received Now',
                       prefixText: '₹ ',
                       hintText: '0',
                     ),
@@ -722,7 +722,7 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('कुल कमरा किराया (Total Tariff):', style: TextStyle(fontSize: 13, color: AppColors.textSecondary, fontFamily: 'Inter')),
+                            const Text('Total Room Tariff:', style: TextStyle(fontSize: 13, color: AppColors.textSecondary, fontFamily: 'Inter')),
                             Text(AppFormatters.formatCurrency(_totalAmount), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, fontFamily: 'Inter')),
                           ],
                         ),
@@ -730,7 +730,7 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('अभी जमा (Advance Paid):', style: TextStyle(fontSize: 13, color: AppColors.success, fontWeight: FontWeight.w600, fontFamily: 'Inter')),
+                            const Text('Advance Paid:', style: TextStyle(fontSize: 13, color: AppColors.success, fontWeight: FontWeight.w600, fontFamily: 'Inter')),
                             Text(AppFormatters.formatCurrency(_advanceAmount), style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.success, fontFamily: 'Inter')),
                           ],
                         ),
@@ -738,7 +738,7 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text('चेकआउट पर बाकी (Due at Check-out):', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, fontFamily: 'Inter')),
+                            const Text('Balance Due at Check-out:', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, fontFamily: 'Inter')),
                             Text(
                               AppFormatters.formatCurrency(_pendingBalance),
                               style: TextStyle(
@@ -782,8 +782,8 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
                           const SizedBox(width: 8),
                           Text(
                             _checkInNow
-                                ? '🟢 Check-In Guest (गेस्ट को चेक-इन करें)'
-                                : '📅 Save Booking (एडवांस बुकिंग सेव करें)',
+                                ? 'Check-In Guest'
+                                : 'Save Booking',
                             style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
                           ),
                         ],

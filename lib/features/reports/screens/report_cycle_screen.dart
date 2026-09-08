@@ -132,7 +132,7 @@ class _ReportCycleScreenState extends State<ReportCycleScreen> {
                 ),
                 const SizedBox(height: 10),
                 const Text(
-                  'बिलिंग डेटा रीसेट करें (Confirm Data Clean)',
+                  'Reset Billing Data (Confirm Cleanup)',
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, fontFamily: 'Inter'),
                   textAlign: TextAlign.center,
                 ),
@@ -147,9 +147,9 @@ class _ReportCycleScreenState extends State<ReportCycleScreen> {
                   child: const Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('• Archive / Reset hoga: Purane Checked-Out Rooms, Past Events & Settled Bills', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.error)),
+                      Text('• Will reset: Past Checked-Out Rooms, Completed Events & Settled Bills', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.error)),
                       SizedBox(height: 4),
-                      Text('• 100% Safe rahega: Future / Advance Bookings, Currently In-House Guests, Upcoming Hall Events, Rooms & Menu', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.success)),
+                      Text('• 100% Preserved: Future / Advance Bookings, In-House Guests, Upcoming Events, Rooms & Menu', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.success)),
                     ],
                   ),
                 ),
@@ -165,7 +165,7 @@ class _ReportCycleScreenState extends State<ReportCycleScreen> {
                             side: const BorderSide(color: AppColors.border),
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
-                          child: const Text('रद्द करें (Cancel)', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary, fontSize: 13)),
+                          child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textPrimary, fontSize: 13)),
                         ),
                       ),
                     ),
@@ -181,7 +181,7 @@ class _ReportCycleScreenState extends State<ReportCycleScreen> {
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             elevation: 0,
                           ),
-                          child: const Text('अभी डिलीट करें', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                          child: const Text('Clean Data Now', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
                         ),
                       ),
                     ),
@@ -443,7 +443,7 @@ class _ReportCycleScreenState extends State<ReportCycleScreen> {
                 children: [
                   _statCard('Cafe Sales', '₹${cafeRev.toStringAsFixed(0)}', '$cafeOrdersCount Orders', Colors.amber.shade700),
                   const SizedBox(width: 10),
-                  _statCard('Banquet (हॉल)', '₹${banquetRev.toStringAsFixed(0)}', '$banquetBookingsCount Events', AppColors.primary),
+                  _statCard('Banquet Hall', '₹${banquetRev.toStringAsFixed(0)}', '$banquetBookingsCount Events', AppColors.primary),
                 ],
               ),
               const SizedBox(height: 10),
