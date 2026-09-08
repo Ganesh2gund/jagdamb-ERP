@@ -1,5 +1,4 @@
 export { Booking } from './Booking.js';
-export { Guest } from './Guest.js';
 export { RestaurantOrder } from './RestaurantOrder.js';
 export { Expense } from './Expense.js';
 export { Inventory } from './Inventory.js';

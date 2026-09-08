@@ -13,7 +13,6 @@ import {
   Booking,
   RestaurantOrder,
   Expense,
-  Guest,
   Notification,
   ReportCycle,
   Invoice,

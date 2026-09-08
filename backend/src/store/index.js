@@ -1,7 +1,6 @@
 import { seedData } from './seedData.js';
 import {
   Booking,
-  Guest,
   RestaurantOrder,
   Expense,
   Inventory,
@@ -161,14 +160,7 @@ class MongoBackedStore {
         });
       }
 
-      // 2. Guests (Transactional - MongoDB)
-      const dbGuests = await Guest.find().lean();
-      if (dbGuests && dbGuests.length > 0) {
-        this.data.guests = dbGuests.map(g => {
-          const { _id, __v, ...rest } = g;
-          return rest;
-        });
-      }
+      this.data.guests = [];
 
       // 7. Restaurant Orders (Transactional - MongoDB)
       const dbOrders = await RestaurantOrder.find().sort({ createdAt: -1 }).lean();
@@ -407,17 +399,6 @@ class MongoBackedStore {
       }
     }
 
-    // Auto-create or link guest record
-    if (newBooking.guestName) {
-      let guest = this.data.guests.find(g => g.name.toLowerCase() === newBooking.guestName.toLowerCase());
-      if (!guest && newBooking.guestPhone) {
-        this.createGuest({
-          name: newBooking.guestName,
-          phone: newBooking.guestPhone,
-          email: newBooking.guestEmail || '',
-        });
-      }
-    }
 
     if (this.isConnected()) {
       Booking.create(newBooking).catch(e => console.error('Error creating booking in Mongo:', e.message));
@@ -604,10 +585,6 @@ class MongoBackedStore {
       ...payload,
     };
     this.data.guests.push(newGuest);
-
-    if (this.isConnected()) {
-      Guest.create(newGuest).catch(e => console.error('Error creating guest in Mongo:', e.message));
-    }
 
     return newGuest;
   }
