@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -20,20 +19,20 @@ class ApiClient {
 
   String? _jwtToken;
 
-  /// Default API base URL: Fastify runs on port 5000
+  /// Default API base URL: Fastify runs on port 5000 (local) or Render (production)
+  static const String _productionUrl = 'https://hotel-erp-backend-9mvt.onrender.com/api';
+
   String get baseUrl {
     if (kIsWeb) {
+      // Web: use same host for local dev, or production URL for deployed web
       final host = Uri.base.host.isNotEmpty ? Uri.base.host : '127.0.0.1';
-      return 'http://$host:5000/api';
-    }
-    try {
-      if (Platform.isAndroid) {
-        return 'http://172.16.23.254:5000/api';
+      if (host == 'localhost' || host == '127.0.0.1') {
+        return 'http://$host:5000/api';
       }
-    } catch (_) {
-      // Fallback for non-supported platforms
+      return _productionUrl;
     }
-    return 'http://127.0.0.1:5000/api';
+    // Mobile (Android/iOS): always use live Render URL
+    return _productionUrl;
   }
 
   Future<void> init() async {
