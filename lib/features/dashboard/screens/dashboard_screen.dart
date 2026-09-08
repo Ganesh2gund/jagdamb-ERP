@@ -10,10 +10,12 @@ import '../../../repositories/room_repository.dart';
 import '../../../repositories/booking_repository.dart';
 import '../../../repositories/notification_repository.dart';
 import '../../../repositories/restaurant_repository.dart';
+import '../../../repositories/cafe_repository.dart';
 import '../../../services/api_client.dart';
 import '../../../models/room.dart';
 import '../../../models/booking.dart';
 import '../../../models/restaurant.dart';
+import '../../../models/cafe.dart';
 import '../../../widgets/common_widgets.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -28,6 +30,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<Room> _rooms = [];
   List<Booking> _bookings = [];
   List<RestaurantOrder> _restaurantOrders = [];
+  List<CafeOrder> _cafeOrders = [];
   int _unreadNotifications = 0;
   String _hotelName = AppConstants.hotelName;
 
@@ -60,12 +63,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final bookingRepo = context.read<BookingRepository>();
     final notifRepo = context.read<NotificationRepository>();
     final restaurantRepo = context.read<RestaurantRepository>();
+    final cafeRepo = context.read<CafeRepository>();
 
     final results = await Future.wait([
       roomRepo.getRooms().catchError((_) => <Room>[]),
       bookingRepo.getBookings().catchError((_) => <Booking>[]),
       notifRepo.getUnreadCount().catchError((_) => 0),
       restaurantRepo.getOrders().catchError((_) => <RestaurantOrder>[]),
+      cafeRepo.getOrders().catchError((_) => <CafeOrder>[]),
     ]);
 
     if (!mounted) return;
@@ -74,6 +79,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _bookings = results[1] as List<Booking>;
       _unreadNotifications = results[2] as int;
       _restaurantOrders = results[3] as List<RestaurantOrder>;
+      _cafeOrders = results[4] as List<CafeOrder>;
       _isLoading = false;
     });
   }
@@ -233,7 +239,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
     final restaurantRevenue = todayPaidOrders.fold(0.0, (s, o) => s + o.total);
 
-    final totalRevenue = roomRevenue + restaurantRevenue;
+    // Real live revenue calculated from today's paid cafe orders
+    final todayPaidCafeOrders = _cafeOrders.where((o) =>
+      o.isPaid &&
+      o.createdAt.year == today.year && o.createdAt.month == today.month && o.createdAt.day == today.day
+    );
+    final cafeRevenue = todayPaidCafeOrders.fold(0.0, (s, o) => s + o.totalAmount);
+
+    final totalRevenue = roomRevenue + restaurantRevenue + cafeRevenue;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -647,6 +660,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
               label: 'Restaurant',
               color: AppColors.cleaning,
               onTap: () => context.go('/restaurant'),
+            ),
+            _QuickActionButton(
+              icon: Icons.local_cafe_outlined,
+              label: 'Cafe (कैफे)',
+              color: const Color(0xFFD97706),
+              onTap: () => context.go('/cafe'),
             ),
             _QuickActionButton(
               icon: Icons.receipt_long_outlined,

@@ -15,6 +15,7 @@ import 'repositories/expense_repository.dart';
 import 'repositories/staff_repository.dart';
 import 'repositories/maintenance_repository.dart';
 import 'repositories/notification_repository.dart';
+import 'repositories/cafe_repository.dart';
 
 import 'services/api_client.dart';
 import 'repositories/http_repositories.dart';
@@ -49,6 +50,7 @@ void main() async {
         Provider<BookingRepository>(create: (_) => HttpBookingRepository()),
         Provider<GuestRepository>(create: (_) => HttpGuestRepository()),
         Provider<RestaurantRepository>(create: (_) => HttpRestaurantRepository()),
+        Provider<CafeRepository>(create: (_) => HttpCafeRepository()),
         Provider<HousekeepingRepository>(create: (_) => HttpHousekeepingRepository()),
         Provider<InventoryRepository>(create: (_) => HttpInventoryRepository()),
         Provider<ExpenseRepository>(create: (_) => HttpExpenseRepository()),

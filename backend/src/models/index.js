@@ -11,3 +11,6 @@ export { Inventory } from './Inventory.js';
 export { Notification } from './Notification.js';
 export { Invoice } from './Invoice.js';
 export { ReportCycle } from './ReportCycle.js';
+export { CafeOrder } from './CafeOrder.js';
+export { CafeCategory } from './CafeCategory.js';
+export { CafeMenuItem } from './CafeMenuItem.js';

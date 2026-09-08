@@ -19,6 +19,7 @@ import {
   Settings,
   ReportCycle,
   Invoice,
+  CafeOrder,
 } from '../models/index.js';
 import { store } from '../store/index.js';
 import { hotelSettings } from './settings.routes.js';
@@ -87,6 +88,7 @@ export async function performDataCleanup(reason = 'Manual/Scheduled Cleanup') {
     if (mongoose.connection.readyState === 1) {
       await Booking.deleteMany({});
       await RestaurantOrder.deleteMany({});
+      await CafeOrder.deleteMany({});
       await Expense.deleteMany({});
       await Guest.deleteMany({});
       await Notification.deleteMany({});
@@ -129,6 +131,7 @@ export async function performDataCleanup(reason = 'Manual/Scheduled Cleanup') {
     // 2. Reset in-memory cache arrays in store
     store.data.bookings = [];
     store.data.restaurantOrders = [];
+    store.data.cafeOrders = [];
     store.data.expenses = [];
     store.data.guests = [];
     store.data.notifications = [];
@@ -182,11 +185,13 @@ export default async function reportRoutes(fastify) {
     // Financial calculations
     const bookings = store.getBookings();
     const orders = store.getOrders();
+    const cafeOrders = store.getCafeOrders ? store.getCafeOrders() : [];
     const expenses = store.getExpenses();
 
     const roomRevenue = bookings.reduce((sum, b) => sum + (Number(b.paidAmount) || Number(b.advancePaid) || 0), 0);
     const restaurantRevenue = orders.filter(o => o.isPaid).reduce((sum, o) => sum + (Number(o.total) || 0), 0);
-    const totalRevenue = roomRevenue + restaurantRevenue;
+    const cafeRevenue = cafeOrders.filter(o => o.isPaid).reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+    const totalRevenue = roomRevenue + restaurantRevenue + cafeRevenue;
     const totalExpenses = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
     const netProfit = totalRevenue - totalExpenses;
 
@@ -208,11 +213,13 @@ export default async function reportRoutes(fastify) {
         summary: {
           roomRevenue,
           restaurantRevenue,
+          cafeRevenue,
           totalRevenue,
           totalExpenses,
           netProfit,
           totalBookingsCount: bookings.length,
           totalOrdersCount: orders.length,
+          totalCafeOrdersCount: cafeOrders.length,
           totalExpensesCount: expenses.length,
         },
       },
@@ -255,6 +262,17 @@ export default async function reportRoutes(fastify) {
       createdAt: o.createdAt || '',
     }));
 
+    const cafeOrders = (store.getCafeOrders ? store.getCafeOrders() : []).map(o => ({
+      id: o.id,
+      orderNumber: o.orderNumber || o.id,
+      guestName: o.guestName || 'Walk-in',
+      items: (o.items || []).map(it => `${it.name} x${it.quantity} (₹${it.price})`).join(', '),
+      total: Number(o.total) || 0,
+      isPaid: o.isPaid === true,
+      paymentMethod: o.paymentMethod || 'Cash',
+      createdAt: o.createdAt || '',
+    }));
+
     const expenses = store.getExpenses().map(e => ({
       id: e.id,
       date: e.date || '',
@@ -266,7 +284,8 @@ export default async function reportRoutes(fastify) {
 
     const roomRevenue = bookings.reduce((sum, b) => sum + b.paidAmount, 0);
     const restaurantRevenue = orders.filter(o => o.isPaid).reduce((sum, o) => sum + o.total, 0);
-    const totalRevenue = roomRevenue + restaurantRevenue;
+    const cafeRevenue = cafeOrders.filter(o => o.isPaid).reduce((sum, o) => sum + o.total, 0);
+    const totalRevenue = roomRevenue + restaurantRevenue + cafeRevenue;
     const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
     const netProfit = totalRevenue - totalExpenses;
 
@@ -287,15 +306,18 @@ export default async function reportRoutes(fastify) {
         summary: {
           roomRevenue,
           restaurantRevenue,
+          cafeRevenue,
           totalRevenue,
           totalExpenses,
           netProfit,
           bookingsCount: bookings.length,
           ordersCount: orders.length,
+          cafeOrdersCount: cafeOrders.length,
           expensesCount: expenses.length,
         },
         bookings,
         orders,
+        cafeOrders,
         expenses,
       },
     });

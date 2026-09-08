@@ -12,6 +12,9 @@ import {
   Notification,
   Settings,
   Invoice,
+  CafeOrder,
+  CafeCategory,
+  CafeMenuItem,
 } from '../models/index.js';
 import mongoose from 'mongoose';
 import { SupabaseMasterService } from '../services/supabaseService.js';
@@ -158,6 +161,54 @@ class MongoBackedStore {
           const { _id, __v, ...rest } = n;
           return rest;
         });
+      }
+
+      // 11. Cafe Categories
+      const dbCafeCats = await CafeCategory.find().lean();
+      if (dbCafeCats && dbCafeCats.length > 0) {
+        this.data.cafeCategories = dbCafeCats.map(c => c.name);
+      } else {
+        const defaultCafeCats = ['Hot Beverages', 'Cold Beverages', 'Snacks & Fast Food', 'Bakery & Desserts'];
+        this.data.cafeCategories = defaultCafeCats;
+        for (const c of defaultCafeCats) {
+          CafeCategory.create({ name: c }).catch(() => {});
+        }
+      }
+
+      // 12. Cafe Menu Items
+      const dbCafeMenu = await CafeMenuItem.find().lean();
+      if (dbCafeMenu && dbCafeMenu.length > 0) {
+        this.data.cafeMenu = dbCafeMenu.map(m => {
+          const { _id, __v, ...rest } = m;
+          return rest;
+        });
+      } else {
+        const defaultCafeMenu = [
+          { id: 'cm_1', name: 'Cappuccino', category: 'Hot Beverages', price: 90, isVeg: true, description: 'Rich espresso with steamed milk foam', isAvailable: true },
+          { id: 'cm_2', name: 'Special Masala Chai', category: 'Hot Beverages', price: 30, isVeg: true, description: 'Cardamom and ginger infused tea', isAvailable: true },
+          { id: 'cm_3', name: 'Cold Coffee with Ice Cream', category: 'Cold Beverages', price: 120, isVeg: true, description: 'Chilled blended coffee topped with vanilla scoop', isAvailable: true },
+          { id: 'cm_4', name: 'Chocolate Thick Shake', category: 'Cold Beverages', price: 110, isVeg: true, description: 'Thick creamy Belgian chocolate shake', isAvailable: true },
+          { id: 'cm_5', name: 'Fresh Lime Soda', category: 'Cold Beverages', price: 60, isVeg: true, description: 'Sweet and salted refreshing soda', isAvailable: true },
+          { id: 'cm_6', name: 'Veg Grilled Cheese Sandwich', category: 'Snacks & Fast Food', price: 100, isVeg: true, description: 'Golden grilled sandwich with spiced vegetables', isAvailable: true },
+          { id: 'cm_7', name: 'Crispy French Fries', category: 'Snacks & Fast Food', price: 80, isVeg: true, description: 'Salted golden potato fries with dip', isAvailable: true },
+          { id: 'cm_8', name: 'Paneer Cheese Burger', category: 'Snacks & Fast Food', price: 130, isVeg: true, description: 'Crispy paneer patty with lettuce and cheese', isAvailable: true },
+          { id: 'cm_9', name: 'Chocolate Brownie', category: 'Bakery & Desserts', price: 90, isVeg: true, description: 'Warm gooey chocolate brownie', isAvailable: true },
+        ];
+        this.data.cafeMenu = defaultCafeMenu;
+        for (const item of defaultCafeMenu) {
+          CafeMenuItem.create(item).catch(() => {});
+        }
+      }
+
+      // 13. Cafe Orders (Transactional)
+      const dbCafeOrders = await CafeOrder.find().sort({ createdAt: -1 }).lean();
+      if (dbCafeOrders && dbCafeOrders.length > 0) {
+        this.data.cafeOrders = dbCafeOrders.map(o => {
+          const { _id, __v, ...rest } = o;
+          return rest;
+        });
+      } else {
+        this.data.cafeOrders = [];
       }
 
       this.isMongoConnected = true;
@@ -793,6 +844,144 @@ class MongoBackedStore {
     }
 
     return order;
+  }
+
+  // ── Cafe: Menu & Categories ──────────────────────
+  getCafeMenu() {
+    if (!this.data.cafeMenu) this.data.cafeMenu = [];
+    return this.data.cafeMenu;
+  }
+
+  getCafeMenuItemById(id) {
+    return (this.data.cafeMenu || []).find(m => String(m.id) === String(id));
+  }
+
+  addCafeMenuItem(payload) {
+    if (!this.data.cafeMenu) this.data.cafeMenu = [];
+    const newItem = {
+      id: 'cm_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      name: payload.name || '',
+      category: payload.category || 'Hot Beverages',
+      price: Number(payload.price) || 0,
+      isVeg: payload.isVeg !== undefined ? payload.isVeg === true : true,
+      description: payload.description || '',
+      isAvailable: payload.isAvailable !== undefined ? payload.isAvailable : true,
+    };
+    this.data.cafeMenu.push(newItem);
+
+    if (this.isConnected()) {
+      CafeMenuItem.create(newItem).catch(e => console.error('Error creating CafeMenuItem in Mongo:', e.message));
+    }
+    return newItem;
+  }
+
+  updateCafeMenuItem(id, updates) {
+    const item = this.getCafeMenuItemById(id);
+    if (!item) return null;
+    if (updates.name !== undefined) item.name = updates.name;
+    if (updates.category !== undefined) item.category = updates.category;
+    if (updates.price !== undefined) item.price = Number(updates.price) || 0;
+    if (updates.isVeg !== undefined) item.isVeg = updates.isVeg === true;
+    if (updates.description !== undefined) item.description = updates.description;
+    if (updates.isAvailable !== undefined) item.isAvailable = updates.isAvailable;
+
+    if (this.isConnected()) {
+      CafeMenuItem.findOneAndUpdate({ id: item.id }, updates).catch(e => console.error('Error updating CafeMenuItem in Mongo:', e.message));
+    }
+    return item;
+  }
+
+  deleteCafeMenuItem(id) {
+    if (!this.data.cafeMenu) return false;
+    const strId = String(id).trim();
+    const idx = this.data.cafeMenu.findIndex(m => String(m.id) === strId);
+    if (idx !== -1) {
+      const removed = this.data.cafeMenu.splice(idx, 1)[0];
+      if (this.isConnected()) {
+        CafeMenuItem.deleteOne({ id: removed.id }).catch(e => console.error('Error deleting CafeMenuItem in Mongo:', e.message));
+      }
+      return true;
+    }
+    return false;
+  }
+
+  getCafeCategories() {
+    if (!this.data.cafeCategories) this.data.cafeCategories = [];
+    return this.data.cafeCategories;
+  }
+
+  addCafeCategory(name) {
+    if (!this.data.cafeCategories) this.data.cafeCategories = [];
+    const clean = String(name).trim();
+    if (!this.data.cafeCategories.includes(clean)) {
+      this.data.cafeCategories.push(clean);
+      if (this.isConnected()) {
+        CafeCategory.create({ name: clean }).catch(e => console.error('Error creating CafeCategory in Mongo:', e.message));
+      }
+    }
+    return clean;
+  }
+
+  deleteCafeCategory(name) {
+    if (!this.data.cafeCategories) return false;
+    const clean = String(name).trim();
+    const idx = this.data.cafeCategories.indexOf(clean);
+    if (idx !== -1) {
+      this.data.cafeCategories.splice(idx, 1);
+
+      if (this.data.cafeMenu) {
+        this.data.cafeMenu = this.data.cafeMenu.filter(
+          m => String(m.category || '').trim().toLowerCase() !== clean.toLowerCase()
+        );
+      }
+
+      if (this.isConnected()) {
+        CafeCategory.deleteOne({ name: clean }).catch(e => console.error('Error deleting CafeCategory in Mongo:', e.message));
+        CafeMenuItem.deleteMany({ category: { $regex: new RegExp(`^${clean}$`, 'i') } }).catch(e => console.error('Error cascade deleting cafe items in Mongo:', e.message));
+      }
+      return true;
+    }
+    return false;
+  }
+
+  // ── Cafe: Orders & Billing ──────────────────────
+  getCafeOrders() {
+    if (!this.data.cafeOrders) this.data.cafeOrders = [];
+    return this.data.cafeOrders;
+  }
+
+  createCafeOrder(payload) {
+    if (!this.data.cafeOrders) this.data.cafeOrders = [];
+    const items = (payload.items || []).map(it => ({
+      id: it.id || '',
+      name: it.name || '',
+      price: Number(it.price) || 0,
+      quantity: Number(it.quantity) || 1,
+      isVeg: it.isVeg !== false,
+    }));
+    const subtotal = payload.subtotal !== undefined ? Number(payload.subtotal) : items.reduce((sum, it) => sum + (it.price * it.quantity), 0);
+    const tax = 0;
+    const total = payload.total !== undefined ? Number(payload.total) : subtotal;
+
+    const newOrder = {
+      id: 'cf_ord_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      orderNumber: `CF-${String(this.data.cafeOrders.length + 1).padStart(3, '0')}`,
+      guestName: payload.guestName || 'Walk-in Guest',
+      items,
+      subtotal,
+      tax,
+      total,
+      isPaid: payload.isPaid !== undefined ? payload.isPaid : true,
+      paymentMethod: payload.paymentMethod || 'Cash',
+      status: 'completed',
+      createdAt: new Date().toISOString(),
+    };
+    this.data.cafeOrders.unshift(newOrder);
+
+    if (this.isConnected()) {
+      CafeOrder.create(newOrder).catch(e => console.error('Error saving CafeOrder in Mongo:', e.message));
+    }
+    return newOrder;
   }
 
   // ── Invoices / Billing Records (Persistent in MongoDB) ───────────

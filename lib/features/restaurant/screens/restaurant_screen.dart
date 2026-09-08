@@ -25,8 +25,23 @@ class _RestaurantScreenState extends State<RestaurantScreen>
   List<RestaurantOrder> _orders = [];
 
   String _selectedCategory = '';
+  String _searchQuery = '';
   final List<OrderItem> _cart = [];
   String? _selectedTableForOrder; // e.g. "Table 1" or "Counter / Walk-in"
+
+  String _getCategoryEmoji(String category) {
+    final lower = category.toLowerCase();
+    if (lower.contains('thali') || lower.contains('meal') || lower.contains('lunch') || lower.contains('dinner')) return '🍱';
+    if (lower.contains('snack') || lower.contains('fast') || lower.contains('starter') || lower.contains('chaat')) return '🥟';
+    if (lower.contains('chinese') || lower.contains('noodle') || lower.contains('manchurian') || lower.contains('soup')) return '🍜';
+    if (lower.contains('roti') || lower.contains('bread') || lower.contains('naan') || lower.contains('paratha')) return '🫓';
+    if (lower.contains('rice') || lower.contains('biryani') || lower.contains('pulao')) return '🍚';
+    if (lower.contains('paneer') || lower.contains('sabji') || lower.contains('curry') || lower.contains('main')) return '🥘';
+    if (lower.contains('drink') || lower.contains('beverage') || lower.contains('cold') || lower.contains('juice') || lower.contains('shake') || lower.contains('lassi')) return '🥤';
+    if (lower.contains('tea') || lower.contains('chai') || lower.contains('coffee') || lower.contains('hot')) return '☕';
+    if (lower.contains('dessert') || lower.contains('sweet') || lower.contains('ice cream') || lower.contains('cake')) return '🍨';
+    return '🍽️';
+  }
 
   @override
   void initState() {
@@ -57,11 +72,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
       _menuItems = results[2] as List<MenuItem>;
       _orders = results[3] as List<RestaurantOrder>;
 
-      if (_categories.isNotEmpty) {
-        if (!_categories.contains(_selectedCategory)) {
-          _selectedCategory = _categories.first;
-        }
-      } else {
+      if (!_categories.contains(_selectedCategory)) {
         _selectedCategory = '';
       }
       _isLoading = false;
@@ -506,7 +517,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
     final priceCtrl = TextEditingController(text: existing != null ? existing.price.toStringAsFixed(0) : '');
     final descCtrl = TextEditingController(text: existing?.description ?? '');
     bool isVeg = existing?.isVeg ?? true;
-    String category = existing?.category ?? _selectedCategory;
+    String category = existing?.category ?? (_selectedCategory.isNotEmpty ? _selectedCategory : (_categories.isNotEmpty ? _categories.first : ''));
     final formKey = GlobalKey<FormState>();
 
     await showModalBottomSheet(
@@ -579,7 +590,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                         child: GestureDetector(
                           onTap: () => setModal(() => isVeg = true),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
                             decoration: BoxDecoration(
                               color: isVeg ? const Color(0xFFDCFCE7) : AppColors.grey50,
                               borderRadius: BorderRadius.circular(12),
@@ -591,9 +602,16 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                             child: const Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.circle, color: Color(0xFF22C55E), size: 14),
-                                SizedBox(width: 8),
-                                Text('शाकाहारी (Veg)', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Color(0xFF15803D))),
+                                Icon(Icons.circle, color: Color(0xFF22C55E), size: 12),
+                                SizedBox(width: 6),
+                                Flexible(
+                                  child: Text(
+                                    'शाकाहारी (Veg)',
+                                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, color: Color(0xFF15803D)),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -604,7 +622,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                         child: GestureDetector(
                           onTap: () => setModal(() => isVeg = false),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+                            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
                             decoration: BoxDecoration(
                               color: !isVeg ? const Color(0xFFFEE2E2) : AppColors.grey50,
                               borderRadius: BorderRadius.circular(12),
@@ -616,9 +634,16 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                             child: const Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.circle, color: Color(0xFFEF4444), size: 14),
-                                SizedBox(width: 8),
-                                Text('मांसाहारी (Non-Veg)', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: Color(0xFFB91C1C))),
+                                Icon(Icons.circle, color: Color(0xFFEF4444), size: 12),
+                                SizedBox(width: 6),
+                                Flexible(
+                                  child: Text(
+                                    'मांसाहारी (Non-Veg)',
+                                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5, color: Color(0xFFB91C1C)),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -1299,10 +1324,10 @@ class _RestaurantScreenState extends State<RestaurantScreen>
         bottom: TabBar(
           controller: _tabController,
           labelPadding: const EdgeInsets.symmetric(horizontal: 10),
-          tabs: const [
-            Tab(icon: Icon(Icons.table_restaurant, size: 20), text: 'टेबल्स (Tables)'),
-            Tab(icon: Icon(Icons.restaurant_menu, size: 20), text: 'मेन्यू (Menu)'),
-            Tab(icon: Icon(Icons.receipt_long, size: 20), text: 'बिल (Bills)'),
+          tabs: [
+            const Tab(icon: Icon(Icons.table_restaurant, size: 20), text: 'टेबल्स (Tables)'),
+            const Tab(icon: Icon(Icons.restaurant_menu, size: 20), text: 'मेन्यू (Menu)'),
+            Tab(icon: const Icon(Icons.receipt_long, size: 20), text: 'बिल (${_orders.length})'),
           ],
         ),
       ),
@@ -1341,6 +1366,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
           // Header Row
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
                 child: Column(
@@ -1348,34 +1374,65 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                   children: [
                     const Text(
                       'डाइनिंग टेबल प्रबंधन',
-                      style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, fontFamily: 'Inter'),
+                      style: TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        fontFamily: 'Inter',
+                        color: AppColors.textPrimary,
+                        letterSpacing: -0.2,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    Text(
-                      'कुल टेबल: ${_tables.length}',
-                      style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                    const SizedBox(height: 3),
+                    Row(
+                      children: [
+                        Container(
+                          width: 7,
+                          height: 7,
+                          decoration: const BoxDecoration(
+                            color: AppColors.success,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'कुल टेबल: ${_tables.length}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               ElevatedButton.icon(
                 onPressed: () => _showAddEditTableDialog(),
-                icon: const Icon(Icons.add, size: 16),
-                label: const Text('टेबल जोड़ें', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: const Text(
+                  'टेबल जोड़ें',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    fontFamily: 'Inter',
+                  ),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  elevation: 2,
+                  shadowColor: AppColors.primary.withValues(alpha: 0.35),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
 
           if (_tables.isEmpty)
             Center(
@@ -1391,132 +1448,221 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                     const SizedBox(height: 16),
                     ElevatedButton.icon(
                       onPressed: () => _showAddEditTableDialog(),
-                      icon: const Icon(Icons.add),
+                      icon: const Icon(Icons.add_rounded),
                       label: const Text('पहली टेबल जोड़ें (Add First Table)'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
                     ),
                   ],
                 ),
               ),
             )
           else
-            ListView.separated(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: _tables.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
-              itemBuilder: (ctx, i) {
-                final t = _tables[i];
-                return Container(
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.border),
-                    boxShadow: [
-                      BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6, offset: const Offset(0, 2)),
-                    ],
+            LayoutBuilder(
+              builder: (context, constraints) {
+                int crossAxisCount = 2;
+                if (constraints.maxWidth > 800) {
+                  crossAxisCount = 4;
+                } else if (constraints.maxWidth > 550) {
+                  crossAxisCount = 3;
+                }
+
+                return GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: crossAxisCount,
+                    childAspectRatio: 0.82,
+                    crossAxisSpacing: 14,
+                    mainAxisSpacing: 14,
                   ),
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                  child: Row(
-                    children: [
-                      // Table Icon
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: const Icon(Icons.table_restaurant, color: AppColors.primary, size: 24),
-                      ),
-                      const SizedBox(width: 12),
+                  itemCount: _tables.length,
+                  itemBuilder: (ctx, i) {
+                    final t = _tables[i];
+                    final isSelectedForOrder = _selectedTableForOrder == 'Table ${t.number}';
 
-                      // Table Info
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              'Table ${t.number}',
-                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, fontFamily: 'Inter'),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              '${t.capacity} सीटें (${t.capacity} Seater)',
-                              style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-
-                      // Order Button
-                      ElevatedButton.icon(
-                        onPressed: () {
+                    return Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
                           setState(() {
                             _selectedTableForOrder = 'Table ${t.number}';
                           });
                           _tabController.animateTo(1);
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text('Selected Table ${t.number} for ordering'),
+                              content: Text('Table ${t.number} के लिए मेन्यू खुला'),
                               duration: const Duration(seconds: 1),
                               behavior: SnackBarBehavior.floating,
                             ),
                           );
                         },
-                        icon: const Icon(Icons.add_shopping_cart, size: 14),
-                        label: const Text('ऑर्डर', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          elevation: 0,
+                        borderRadius: BorderRadius.circular(16),
+                        child: Ink(
+                          decoration: BoxDecoration(
+                            color: AppColors.surface,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: isSelectedForOrder ? AppColors.primary : AppColors.border.withValues(alpha: 0.8),
+                              width: isSelectedForOrder ? 2.0 : 1.0,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: isSelectedForOrder
+                                    ? AppColors.primary.withValues(alpha: 0.14)
+                                    : Colors.black.withValues(alpha: 0.04),
+                                blurRadius: isSelectedForOrder ? 10 : 8,
+                                offset: const Offset(0, 3),
+                              ),
+                            ],
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                // Top Row: Table Name & 3-dot Menu
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        'Table ${t.number}',
+                                        style: const TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.w800,
+                                          fontFamily: 'Inter',
+                                          color: AppColors.textPrimary,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    SizedBox(
+                                      width: 26,
+                                      height: 26,
+                                      child: PopupMenuButton<String>(
+                                        icon: const Icon(Icons.more_vert_rounded, color: AppColors.textSecondary, size: 18),
+                                        padding: EdgeInsets.zero,
+                                        constraints: const BoxConstraints(),
+                                        onSelected: (val) {
+                                          if (val == 'edit') _showAddEditTableDialog(t);
+                                          if (val == 'delete') _deleteTable(t);
+                                        },
+                                        itemBuilder: (_) => [
+                                          const PopupMenuItem(
+                                            value: 'edit',
+                                            child: Row(
+                                              children: [
+                                                Icon(Icons.edit_outlined, size: 18, color: AppColors.primary),
+                                                SizedBox(width: 8),
+                                                Text('एडिट करें (Edit)'),
+                                              ],
+                                            ),
+                                          ),
+                                          const PopupMenuItem(
+                                            value: 'delete',
+                                            child: Row(
+                                              children: [
+                                                Icon(Icons.delete_outline, size: 18, color: AppColors.error),
+                                                SizedBox(width: 8),
+                                                Text('हटाएं (Delete)', style: TextStyle(color: AppColors.error)),
+                                              ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+
+                                // Middle: Table Icon & Capacity Pill
+                                Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 48,
+                                      height: 48,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary.withValues(alpha: 0.08),
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: AppColors.primary.withValues(alpha: 0.16),
+                                          width: 1.2,
+                                        ),
+                                      ),
+                                      child: const Icon(
+                                        Icons.table_restaurant_rounded,
+                                        color: AppColors.primary,
+                                        size: 26,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.grey100,
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                          color: AppColors.border.withValues(alpha: 0.5),
+                                          width: 0.8,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        '${t.capacity} सीट (${t.capacity} Seater)',
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.textSecondary,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+
+                                // Bottom: Order Button
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 34,
+                                  child: ElevatedButton.icon(
+                                    onPressed: () {
+                                      setState(() {
+                                        _selectedTableForOrder = 'Table ${t.number}';
+                                      });
+                                      _tabController.animateTo(1);
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Table ${t.number} के लिए मेन्यू खुला'),
+                                          duration: const Duration(seconds: 1),
+                                          behavior: SnackBarBehavior.floating,
+                                        ),
+                                      );
+                                    },
+                                    icon: const Icon(Icons.add_shopping_cart_rounded, size: 14),
+                                    label: const Text(
+                                      'ऑर्डर लें',
+                                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                                    ),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: AppColors.primary,
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
+                                      padding: EdgeInsets.zero,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 4),
-
-                      // More Actions (Edit / Delete)
-                      PopupMenuButton<String>(
-                        icon: const Icon(Icons.more_vert, color: AppColors.textSecondary, size: 20),
-                        padding: EdgeInsets.zero,
-                        constraints: const BoxConstraints(),
-                        onSelected: (val) {
-                          if (val == 'edit') _showAddEditTableDialog(t);
-                          if (val == 'delete') _deleteTable(t);
-                        },
-                        itemBuilder: (_) => [
-                          const PopupMenuItem(
-                            value: 'edit',
-                            child: Row(
-                              children: [
-                                Icon(Icons.edit_outlined, size: 18, color: AppColors.primary),
-                                SizedBox(width: 8),
-                                Text('एडिट करें (Edit)'),
-                              ],
-                            ),
-                          ),
-                          const PopupMenuItem(
-                            value: 'delete',
-                            child: Row(
-                              children: [
-                                Icon(Icons.delete_outline, size: 18, color: AppColors.error),
-                                SizedBox(width: 8),
-                                Text('हटाएं (Delete)', style: TextStyle(color: AppColors.error)),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                    );
+                  },
                 );
               },
             ),
@@ -1565,24 +1711,80 @@ class _RestaurantScreenState extends State<RestaurantScreen>
       );
     }
 
-    final filtered = _menuItems.where((m) => m.category.toLowerCase() == _selectedCategory.toLowerCase()).toList();
+    final filtered = _menuItems.where((m) {
+      final matchesCategory = _selectedCategory.isEmpty || m.category.toLowerCase() == _selectedCategory.toLowerCase();
+      final matchesSearch = _searchQuery.isEmpty ||
+          m.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          (m.description ?? '').toLowerCase().contains(_searchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
+    }).toList();
 
     return Column(
       children: [
+        // ── Search Input ──
+        Container(
+          color: AppColors.surface,
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 6),
+          child: TextField(
+            onChanged: (val) => setState(() => _searchQuery = val),
+            decoration: InputDecoration(
+              hintText: 'व्यंजन या ड्रिंक्स खोजें (Search food, drinks)...',
+              prefixIcon: const Icon(Icons.search_rounded, size: 20, color: AppColors.textSecondary),
+              suffixIcon: _searchQuery.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear_rounded, size: 18),
+                      onPressed: () => setState(() => _searchQuery = ''),
+                    )
+                  : null,
+              filled: true,
+              fillColor: AppColors.grey50,
+              contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+              ),
+            ),
+          ),
+        ),
+
         // ── Categories Scroll Bar ──
         Container(
           color: AppColors.surface,
-          padding: const EdgeInsets.symmetric(vertical: 10),
+          padding: const EdgeInsets.only(bottom: 8),
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
+                // 'सभी (All)' chip
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: ChoiceChip(
+                    label: const Text('सभी (All)'),
+                    selected: _selectedCategory.isEmpty,
+                    selectedColor: AppColors.primarySurface,
+                    labelStyle: TextStyle(
+                      fontWeight: FontWeight.w700,
+                      color: _selectedCategory.isEmpty ? AppColors.primary : AppColors.textPrimary,
+                    ),
+                    side: BorderSide(color: _selectedCategory.isEmpty ? AppColors.primary : AppColors.border),
+                    onSelected: (val) => setState(() => _selectedCategory = ''),
+                  ),
+                ),
                 ..._categories.map((cat) {
                   final isSelected = _selectedCategory.toLowerCase() == cat.toLowerCase();
                   return Padding(
                     padding: const EdgeInsets.only(right: 8),
                     child: InputChip(
+                      avatar: Text(_getCategoryEmoji(cat), style: const TextStyle(fontSize: 13)),
                       label: Text(
                         cat,
                         style: TextStyle(
@@ -1593,7 +1795,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                       selected: isSelected,
                       selectedColor: AppColors.primary,
                       backgroundColor: AppColors.grey100,
-                      onPressed: () => setState(() => _selectedCategory = cat),
+                      onPressed: () => setState(() => _selectedCategory = isSelected ? '' : cat),
                       onDeleted: () => _deleteCategory(cat),
                       deleteIcon: Icon(
                         Icons.close,
@@ -1605,7 +1807,7 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                 }),
                 ActionChip(
                   avatar: const Icon(Icons.add, size: 16, color: AppColors.primary),
-                  label: const Text('+ Category (कैटेगरी जोड़ें)', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.primary)),
+                  label: const Text('+ Category', style: TextStyle(fontWeight: FontWeight.w700, color: AppColors.primary)),
                   onPressed: _showAddCategoryDialog,
                   backgroundColor: AppColors.primarySurface,
                 ),
@@ -1615,21 +1817,29 @@ class _RestaurantScreenState extends State<RestaurantScreen>
         ),
         const Divider(height: 1),
 
-        // ── Category Header with Add Dish Button ──
+        // ── Category Header & Add Dish Bar ──
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
                 child: Row(
                   children: [
-                    const Icon(Icons.restaurant_menu, color: AppColors.primary, size: 20),
+                    Text(
+                      _selectedCategory.isEmpty ? '🍽️' : _getCategoryEmoji(_selectedCategory),
+                      style: const TextStyle(fontSize: 18),
+                    ),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        '$_selectedCategory (${filtered.length})',
-                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, fontFamily: 'Inter'),
+                        _searchQuery.isNotEmpty
+                            ? 'खोज परिणाम (${filtered.length})'
+                            : _selectedCategory.isEmpty
+                                ? 'सभी व्यंजन (${filtered.length})'
+                                : '$_selectedCategory (${filtered.length})',
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, fontFamily: 'Inter'),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -1637,25 +1847,32 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                   ],
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 12),
               ElevatedButton.icon(
                 onPressed: () => _showAddEditMenuItemDialog(),
-                icon: const Icon(Icons.add, size: 16),
-                label: const Text('डिश जोड़ें', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: const Text(
+                  'डिश जोड़ें',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    fontFamily: 'Inter',
+                  ),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
                   foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  minimumSize: Size.zero,
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  elevation: 2,
+                  shadowColor: AppColors.primary.withValues(alpha: 0.35),
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
               ),
             ],
           ),
         ),
 
-        // ── Menu Items List ──
+        // ── Menu Items List / Grid ──
         Expanded(
           child: filtered.isEmpty
               ? Center(
@@ -1667,11 +1884,15 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                         const Icon(Icons.fastfood_outlined, size: 50, color: AppColors.textSecondary),
                         const SizedBox(height: 12),
                         Text(
-                          '"$_selectedCategory" में कोई डिश नहीं है',
+                          _searchQuery.isNotEmpty
+                              ? 'कोई डिश नहीं मिली (No matches found)'
+                              : _selectedCategory.isNotEmpty
+                                  ? '"$_selectedCategory" में कोई डिश नहीं है'
+                                  : 'मेन्यू में कोई डिश नहीं है',
                           style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15),
                         ),
                         const SizedBox(height: 6),
-                        const Text('ऊपर दिए बटन से इस कैटेगरी में डिश जोड़ें', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                        const Text('ऊपर दिए बटन से नई डिश जोड़ें', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
                         const SizedBox(height: 14),
                         ElevatedButton.icon(
                           onPressed: () => _showAddEditMenuItemDialog(),
@@ -1682,142 +1903,291 @@ class _RestaurantScreenState extends State<RestaurantScreen>
                     ),
                   ),
                 )
-              : ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 80),
-                  itemCount: filtered.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
-                  itemBuilder: (ctx, i) {
-                    final item = filtered[i];
-                    final inCartQty = _getItemCartQty(item.id);
-
-                    return AppCard(
-                      child: Row(
-                        children: [
-                          // Veg / Non-veg indicator
-                          Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: item.isVeg ? const Color(0xFF22C55E) : const Color(0xFFEF4444), width: 1.5),
-                              borderRadius: BorderRadius.circular(4),
-                            ),
-                            child: Icon(
-                              Icons.circle,
-                              size: 10,
-                              color: item.isVeg ? const Color(0xFF22C55E) : const Color(0xFFEF4444),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-
-                          // Details
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  item.name,
-                                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, fontFamily: 'Inter'),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                if (item.description != null && item.description!.isNotEmpty) ...[
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    item.description!,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-                                  ),
-                                ],
-                                const SizedBox(height: 4),
-                                Text(
-                                  AppFormatters.formatCurrency(item.price),
-                                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: Color(0xFF16A34A)),
-                                ),
-                              ],
-                            ),
-                          ),
-
-                          // Edit / Delete PopupMenu
-                          PopupMenuButton<String>(
-                            icon: const Icon(Icons.more_vert, size: 20, color: AppColors.textSecondary),
-                            padding: EdgeInsets.zero,
-                            constraints: const BoxConstraints(),
-                            onSelected: (val) {
-                              if (val == 'edit') _showAddEditMenuItemDialog(item);
-                              if (val == 'delete') _deleteMenuItem(item);
-                            },
-                            itemBuilder: (_) => [
-                              const PopupMenuItem(
-                                value: 'edit',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.edit_outlined, size: 18, color: AppColors.primary),
-                                    SizedBox(width: 8),
-                                    Text('एडिट करें (Edit)'),
-                                  ],
-                                ),
-                              ),
-                              const PopupMenuItem(
-                                value: 'delete',
-                                child: Row(
-                                  children: [
-                                    Icon(Icons.delete_outline, size: 18, color: AppColors.error),
-                                    SizedBox(width: 8),
-                                    Text('हटाएं (Delete)', style: TextStyle(color: AppColors.error)),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(width: 8),
-
-                          // Cart Add / Quantity control
-                          if (inCartQty == 0)
-                            ElevatedButton(
-                              onPressed: () => _addToCart(item),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primary,
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              ),
-                              child: const Text('+ Add', style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13)),
-                            )
-                          else
-                            Container(
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFDCFCE7),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: const Color(0xFF16A34A)),
-                              ),
-                              child: Row(
-                                children: [
-                                  IconButton(
-                                    onPressed: () => _removeFromCart(item),
-                                    icon: const Icon(Icons.remove, size: 16, color: Color(0xFF16A34A)),
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                                  ),
-                                  Text(
-                                    '$inCartQty',
-                                    style: const TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF16A34A), fontSize: 13),
-                                  ),
-                                  IconButton(
-                                    onPressed: () => _addToCart(item),
-                                    icon: const Icon(Icons.add, size: 16, color: Color(0xFF16A34A)),
-                                    padding: EdgeInsets.zero,
-                                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
-                                  ),
-                                ],
-                              ),
-                            ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
+              : _buildRestaurantItemsView(filtered),
         ),
       ],
+    );
+  }
+
+  Widget _buildRestaurantItemsView(List<MenuItem> filtered) {
+    final bottomPad = _cart.isNotEmpty ? 100.0 : 30.0;
+
+    // If search active or specific category chosen
+    if (_searchQuery.isNotEmpty || _selectedCategory.isNotEmpty) {
+      return ListView(
+        padding: EdgeInsets.fromLTRB(16, 6, 16, bottomPad),
+        children: [
+          _buildRestaurantGrid(filtered),
+        ],
+      );
+    }
+
+    // Default: Group dishes category-wise!
+    final Map<String, List<MenuItem>> grouped = {};
+    for (final item in filtered) {
+      grouped.putIfAbsent(item.category, () => []).add(item);
+    }
+
+    return ListView(
+      padding: EdgeInsets.fromLTRB(16, 6, 16, bottomPad),
+      children: [
+        for (final cat in _categories)
+          if (grouped.containsKey(cat) && grouped[cat]!.isNotEmpty) ...[
+            Container(
+              margin: const EdgeInsets.only(top: 8, bottom: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.primarySurface,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+              ),
+              child: Row(
+                children: [
+                  Text(_getCategoryEmoji(cat), style: const TextStyle(fontSize: 16)),
+                  const SizedBox(width: 8),
+                  Text(
+                    cat,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary),
+                  ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '${grouped[cat]!.length}',
+                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            _buildRestaurantGrid(grouped[cat]!),
+            const SizedBox(height: 8),
+          ],
+        for (final entry in grouped.entries)
+          if (!_categories.contains(entry.key) && entry.value.isNotEmpty) ...[
+            Container(
+              margin: const EdgeInsets.only(top: 8, bottom: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              decoration: BoxDecoration(
+                color: AppColors.primarySurface,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
+              ),
+              child: Row(
+                children: [
+                  Text(_getCategoryEmoji(entry.key), style: const TextStyle(fontSize: 16)),
+                  const SizedBox(width: 8),
+                  Text(
+                    entry.key,
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '${entry.value.length} डिश',
+                    style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppColors.primary),
+                  ),
+                ],
+              ),
+            ),
+            _buildRestaurantGrid(entry.value),
+            const SizedBox(height: 8),
+          ],
+      ],
+    );
+  }
+
+  Widget _buildRestaurantGrid(List<MenuItem> items) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        int crossAxisCount = 2;
+        if (constraints.maxWidth > 800) {
+          crossAxisCount = 4;
+        } else if (constraints.maxWidth > 550) {
+          crossAxisCount = 3;
+        }
+
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: crossAxisCount,
+            childAspectRatio: 1.18,
+            crossAxisSpacing: 10,
+            mainAxisSpacing: 10,
+          ),
+          itemCount: items.length,
+          itemBuilder: (context, idx) {
+            final item = items[idx];
+            final inCartQty = _getItemCartQty(item.id);
+
+            return InkWell(
+              onTap: () => _addToCart(item),
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.surface,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: inCartQty > 0 ? const Color(0xFF16A34A) : AppColors.border,
+                    width: inCartQty > 0 ? 1.8 : 1.0,
+                  ),
+                  boxShadow: inCartQty > 0
+                      ? [
+                          BoxShadow(
+                            color: const Color(0xFF16A34A).withValues(alpha: 0.12),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ]
+                      : [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.02),
+                            blurRadius: 4,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Top: Veg dot, Price & Popup Menu
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(2.5),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: item.isVeg ? const Color(0xFF22C55E) : const Color(0xFFEF4444),
+                              width: 1.5,
+                            ),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Icon(
+                            Icons.circle,
+                            size: 7,
+                            color: item.isVeg ? const Color(0xFF22C55E) : const Color(0xFFEF4444),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          AppFormatters.formatCurrency(item.price),
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Color(0xFF16A34A)),
+                        ),
+                        const Spacer(),
+                        PopupMenuButton<String>(
+                          icon: const Icon(Icons.more_vert, size: 18, color: AppColors.textSecondary),
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(),
+                          onSelected: (val) {
+                            if (val == 'edit') _showAddEditMenuItemDialog(item);
+                            if (val == 'delete') _deleteMenuItem(item);
+                          },
+                          itemBuilder: (_) => [
+                            const PopupMenuItem(
+                              value: 'edit',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.edit_outlined, size: 18, color: AppColors.primary),
+                                  SizedBox(width: 8),
+                                  Text('एडिट करें (Edit)'),
+                                ],
+                              ),
+                            ),
+                            const PopupMenuItem(
+                              value: 'delete',
+                              child: Row(
+                                children: [
+                                  Icon(Icons.delete_outline, size: 18, color: AppColors.error),
+                                  SizedBox(width: 8),
+                                  Text('हटाएं (Delete)', style: TextStyle(color: AppColors.error)),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    // Item Name
+                    Expanded(
+                      child: Text(
+                        item.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          color: AppColors.textPrimary,
+                          height: 1.2,
+                        ),
+                      ),
+                    ),
+                    // Bottom Add or Stepper
+                    if (inCartQty == 0)
+                      Container(
+                        height: 28,
+                        width: double.infinity,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFDCFCE7),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFF86EFAC)),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.add_rounded, size: 15, color: Color(0xFF15803D)),
+                            SizedBox(width: 4),
+                            Text(
+                              'जोड़ें',
+                              style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF15803D)),
+                            ),
+                          ],
+                        ),
+                      )
+                    else
+                      Container(
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF16A34A),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            InkWell(
+                              onTap: () => _removeFromCart(item),
+                              child: const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                child: Icon(Icons.remove_rounded, size: 16, color: Colors.white),
+                              ),
+                            ),
+                            Text(
+                              '$inCartQty',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12, color: Colors.white),
+                            ),
+                            InkWell(
+                              onTap: () => _addToCart(item),
+                              child: const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                child: Icon(Icons.add_rounded, size: 16, color: Colors.white),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -1825,121 +2195,203 @@ class _RestaurantScreenState extends State<RestaurantScreen>
   // TAB 3: ORDERS & BILLS (PAID BILLS HISTORY)
   // ───────────────────────────────────────────────────────────────────────────
   Widget _buildOrdersTab() {
-    if (_orders.isEmpty) {
-      return const Center(
-        child: Padding(
-          padding: const EdgeInsets.all(40),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+    final totalRevenue = _orders.fold<double>(0, (sum, o) => sum + o.total);
+
+    return Column(
+      children: [
+        // Total Revenue & Bill Count Summary Card (Like Cafe)
+        Container(
+          margin: const EdgeInsets.fromLTRB(16, 14, 16, 8),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [AppColors.primaryDark, AppColors.primary],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.primary.withValues(alpha: 0.28),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Icon(Icons.receipt_long_outlined, size: 60, color: AppColors.textSecondary),
-              SizedBox(height: 12),
-              Text('कोई बिल इतिहास नहीं है (No Orders Yet)', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
-              SizedBox(height: 6),
-              Text('मेन्यू से ऑर्डर लेकर पेमेंट सेटल करने पर बिल यहाँ दिखाई देंगे', textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'कुल रेस्टोरेंट बिक्री (Total Revenue)',
+                    style: TextStyle(color: Colors.white70, fontSize: 12, fontWeight: FontWeight.w500),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    AppFormatters.formatCurrency(totalRevenue),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      fontFamily: 'Inter',
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ],
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    width: 1,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    const Text(
+                      'कुल बिल',
+                      style: TextStyle(color: Colors.white70, fontSize: 11, fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      '${_orders.length}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
-      );
-    }
 
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
-      itemCount: _orders.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (ctx, i) {
-        final o = _orders[i];
-        final itemCount = o.items.fold<int>(0, (s, it) => s + it.quantity);
-
-        return AppCard(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          o.tableOrRoom ?? 'Counter',
-                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: AppColors.primary),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '#${o.id.substring(o.id.length > 6 ? o.id.length - 6 : 0).toUpperCase()}',
-                        style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontFamily: 'Inter'),
-                      ),
-                    ],
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFDCFCE7),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      'Paid (${o.paymentMethod})',
-                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: Color(0xFF16A34A)),
+        // Orders List or Empty State
+        Expanded(
+          child: _orders.isEmpty
+              ? const Center(
+                  child: Padding(
+                    padding: EdgeInsets.all(40),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.receipt_long_outlined, size: 60, color: AppColors.textSecondary),
+                        SizedBox(height: 12),
+                        Text('कोई बिल इतिहास नहीं है (No Orders Yet)', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 16)),
+                        SizedBox(height: 6),
+                        Text('मेन्यू से ऑर्डर लेकर पेमेंट सेटल करने पर बिल यहाँ दिखाई देंगे', textAlign: TextAlign.center, style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                      ],
                     ),
                   ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              if (o.guestName != null && o.guestName!.isNotEmpty) ...[
-                Text('Guest: ${o.guestName}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 4),
-              ],
-              Text(
-                o.items.map((it) => '${it.menuItem.name} × ${it.quantity}').join(', '),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
-              ),
-              const Divider(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '$itemCount Items • ${AppFormatters.formatTime(o.createdAt)}',
-                        style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                )
+              : ListView.separated(
+                  padding: const EdgeInsets.fromLTRB(16, 6, 16, 80),
+                  itemCount: _orders.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                  itemBuilder: (ctx, i) {
+                    final o = _orders[i];
+                    final itemCount = o.items.fold<int>(0, (s, it) => s + it.quantity);
+
+                    return AppCard(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.primary.withValues(alpha: 0.1),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      o.tableOrRoom ?? 'Counter',
+                                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 12, color: AppColors.primary),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    '#${o.id.substring(o.id.length > 6 ? o.id.length - 6 : 0).toUpperCase()}',
+                                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontFamily: 'Inter'),
+                                  ),
+                                ],
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFDCFCE7),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  'Paid (${o.paymentMethod})',
+                                  style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 11, color: Color(0xFF16A34A)),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          if (o.guestName != null && o.guestName!.isNotEmpty) ...[
+                            Text('Guest: ${o.guestName}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 4),
+                          ],
+                          Text(
+                            o.items.map((it) => '${it.menuItem.name} × ${it.quantity}').join(', '),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                          ),
+                          const Divider(height: 16),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '$itemCount Items • ${AppFormatters.formatTime(o.createdAt)}',
+                                    style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    AppFormatters.formatCurrency(o.total),
+                                    style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: Color(0xFF16A34A)),
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  OutlinedButton.icon(
+                                    onPressed: () => _showBillDetailDialog(o),
+                                    icon: const Icon(Icons.receipt_long, size: 14, color: AppColors.primary),
+                                    label: const Text('बिल देखें', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary)),
+                                    style: OutlinedButton.styleFrom(
+                                      side: const BorderSide(color: AppColors.primary),
+                                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: 2),
-                      Text(
-                        AppFormatters.formatCurrency(o.total),
-                        style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900, color: Color(0xFF16A34A)),
-                      ),
-                    ],
-                  ),
-                  Row(
-                    children: [
-                      OutlinedButton.icon(
-                        onPressed: () => _showBillDetailDialog(o),
-                        icon: const Icon(Icons.receipt_long, size: 14, color: AppColors.primary),
-                        label: const Text('बिल देखें', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: AppColors.primary)),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: AppColors.primary),
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
+                    );
+                  },
+                ),
+        ),
+      ],
     );
   }
 

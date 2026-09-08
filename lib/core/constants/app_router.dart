@@ -17,6 +17,7 @@ import 'package:hotel_erp/features/guests/screens/guest_detail_screen.dart';
 import 'package:hotel_erp/features/billing/screens/billing_screen.dart';
 import 'package:hotel_erp/features/payments/screens/payments_screen.dart';
 import 'package:hotel_erp/features/restaurant/screens/restaurant_screen.dart';
+import 'package:hotel_erp/features/cafe/screens/cafe_screen.dart';
 import 'package:hotel_erp/features/housekeeping/screens/housekeeping_screen.dart';
 import 'package:hotel_erp/features/inventory/screens/inventory_screen.dart';
 import 'package:hotel_erp/features/expenses/screens/expenses_screen.dart';
@@ -141,6 +142,10 @@ class AppRouter {
           GoRoute(
             path: '/restaurant',
             builder: (context, state) => const RestaurantScreen(),
+          ),
+          GoRoute(
+            path: '/cafe',
+            builder: (context, state) => const CafeScreen(),
           ),
           GoRoute(
             path: '/housekeeping',

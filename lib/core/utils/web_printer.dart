@@ -539,4 +539,121 @@ class WebPrinter {
 
     openHtmlContent(htmlContent);
   }
+
+  static void printCafeReceipt({
+    required String orderNumber,
+    required List<Map<String, dynamic>> items,
+    required double totalAmount,
+    required String paymentMethod,
+    String? guestName,
+    String? hotelName,
+    String? hotelAddress,
+    String? hotelPhone,
+  }) {
+    final effectiveHotelName = (hotelName != null && hotelName.trim().isNotEmpty)
+        ? hotelName.trim()
+        : (WebPrinter.hotelName.trim().isNotEmpty ? WebPrinter.hotelName.trim() : AppConstants.hotelName);
+
+    final effectiveHotelAddress = (hotelAddress != null && hotelAddress.trim().isNotEmpty)
+        ? hotelAddress.trim()
+        : WebPrinter.hotelAddress.trim();
+
+    final effectiveHotelPhone = (hotelPhone != null && hotelPhone.trim().isNotEmpty)
+        ? hotelPhone.trim()
+        : WebPrinter.hotelPhone.trim();
+
+    final nowStr = DateTime.now().toString().split('.')[0];
+    final itemsHtml = items.map((i) {
+      final name = i['name'] ?? '';
+      final qty = i['quantity'] ?? 1;
+      final price = (i['price'] as num?)?.toDouble() ?? 0.0;
+      final total = (price * qty).toStringAsFixed(2);
+      return '''
+        <tr>
+          <td><strong>$name</strong></td>
+          <td style="text-align:center;">$qty</td>
+          <td style="text-align:right;">₹${price.toStringAsFixed(2)}</td>
+          <td style="text-align:right;"><strong>₹$total</strong></td>
+        </tr>
+      ''';
+    }).join('');
+
+    final htmlContent = '''
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Cafe Bill - $orderNumber</title>
+  <style>
+    body { font-family: 'Courier New', Courier, monospace, sans-serif; background: #fdfbf7; padding: 20px; color: #1e293b; }
+    .slip { max-width: 380px; margin: 0 auto; background: #fff; border: 1px dashed #d97706; border-radius: 8px; padding: 24px; }
+    .center { text-align: center; }
+    h2 { margin: 0 0 4px 0; font-size: 20px; font-weight: 800; color: #78350f; }
+    p { margin: 2px 0; font-size: 13px; color: #475569; }
+    .divider { border-top: 1px dashed #fcd34d; margin: 12px 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 10px 0; }
+    th { text-align: left; border-bottom: 1px dashed #fcd34d; padding-bottom: 6px; }
+    td { padding: 4px 0; }
+    .total-row { font-size: 16px; font-weight: 800; border-top: 2px solid #b45309; padding-top: 8px; margin-top: 8px; }
+    .paid-tag { background: #fef3c7; color: #92400e; font-weight: 700; padding: 6px; border-radius: 6px; text-align: center; margin-top: 12px; border: 1px solid #fde68a; }
+    @media print {
+      body { background: #fff; padding: 0; }
+      .slip { border: none; max-width: 100%; padding: 0; }
+      .print-btn { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div style="text-align: center; margin-bottom: 16px;" class="print-btn">
+    <button style="padding: 8px 16px; background: #d97706; color: #fff; border: none; border-radius: 6px; font-weight: 700; cursor: pointer;" onclick="window.print()">🖨️ Print Cafe Bill</button>
+  </div>
+  <div class="slip">
+    <div class="center">
+      <h2>☕ $effectiveHotelName CAFE</h2>
+      <p>Coffee, Beverages & Snacks</p>
+      ${effectiveHotelAddress.isNotEmpty ? '<p style="font-size: 11px;">📍 $effectiveHotelAddress</p>' : ''}
+      ${effectiveHotelPhone.isNotEmpty ? '<p style="font-size: 11px;">📞 $effectiveHotelPhone</p>' : ''}
+      <p style="font-size: 12px; margin-top: 4px;">Bill No: <strong>#$orderNumber</strong> | $nowStr</p>
+    </div>
+    <div class="divider"></div>
+    <p><strong>Counter Sale:</strong> Express POS</p>
+    ${guestName != null && guestName.isNotEmpty ? '<p><strong>Customer:</strong> $guestName</p>' : ''}
+    <p><strong>Payment:</strong> $paymentMethod (Paid)</p>
+    <div class="divider"></div>
+    <table>
+      <thead>
+        <tr>
+          <th>Item</th>
+          <th style="text-align:center;">Qty</th>
+          <th style="text-align:right;">Rate</th>
+          <th style="text-align:right;">Amt</th>
+        </tr>
+      </thead>
+      <tbody>
+        $itemsHtml
+      </tbody>
+    </table>
+    <div class="divider"></div>
+    <div style="display:flex; justify-content:space-between;" class="total-row">
+      <span>Grand Total (कुल):</span>
+      <span>₹${totalAmount.toStringAsFixed(2)}</span>
+    </div>
+    <div class="paid-tag">
+      ✓ PAYMENT RECEIVED VIA $paymentMethod
+    </div>
+    <div class="center" style="margin-top: 16px; font-size: 12px; color: #78350f;">
+      Thank you! Visit again for freshly brewed coffee ☕
+    </div>
+  </div>
+  <script>
+    window.onload = function() {
+      setTimeout(function() { window.print(); }, 400);
+    };
+  </script>
+</body>
+</html>
+''';
+
+    openHtmlContent(htmlContent);
+  }
 }

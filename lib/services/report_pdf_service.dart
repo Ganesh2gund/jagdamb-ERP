@@ -89,6 +89,7 @@ class ReportPdfService {
 
     final roomRev = (summary['roomRevenue'] as num?)?.toDouble() ?? 0.0;
     final restRev = (summary['restaurantRevenue'] as num?)?.toDouble() ?? 0.0;
+    final cafeRev = (summary['cafeRevenue'] as num?)?.toDouble() ?? 0.0;
     final totalRev = (summary['totalRevenue'] as num?)?.toDouble() ?? 0.0;
     final totalExp = (summary['totalExpenses'] as num?)?.toDouble() ?? 0.0;
     final netProfit = (summary['netProfit'] as num?)?.toDouble() ?? 0.0;
@@ -206,13 +207,15 @@ class ReportPdfService {
             pw.Row(
               children: [
                 _summaryCard('Total Revenue', _formatCurrency(totalRev), 'Gross Collections', PdfColors.blue900, PdfColors.blue50),
-                pw.SizedBox(width: 5),
+                pw.SizedBox(width: 4),
                 _summaryCard('Room Rev', _formatCurrency(roomRev), 'Guest Bookings', PdfColors.green800, PdfColors.green50),
-                pw.SizedBox(width: 5),
+                pw.SizedBox(width: 4),
                 _summaryCard('Restaurant', _formatCurrency(restRev), 'Dining & F&B', PdfColors.orange800, PdfColors.orange50),
-                pw.SizedBox(width: 5),
+                pw.SizedBox(width: 4),
+                _summaryCard('Cafe Rev', _formatCurrency(cafeRev), 'Express POS', PdfColors.amber900, PdfColors.amber50),
+                pw.SizedBox(width: 4),
                 _summaryCard('Expenses', _formatCurrency(totalExp), 'Operating Outflow', PdfColors.red800, PdfColors.red50),
-                pw.SizedBox(width: 5),
+                pw.SizedBox(width: 4),
                 _summaryCard(
                   'Net Balance',
                   _formatCurrency(netProfit),
