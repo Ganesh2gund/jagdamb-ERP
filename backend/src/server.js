@@ -122,6 +122,21 @@ try {
   console.log(`🏥 Health:   http://127.0.0.1:${PORT}/api/health`);
   console.log(`🍃 Database: MongoDB Atlas (Cluster0)`);
   console.log(`======================================================\n`);
+
+  // Auto Keep-Alive for Free Cloud Deployments (e.g. Render) to prevent sleep
+  const externalUrl = process.env.RENDER_EXTERNAL_URL || process.env.PUBLIC_API_URL;
+  if (externalUrl) {
+    const pingUrl = `${externalUrl.replace(/\/$/, '')}/api/health`;
+    console.log(`⏰ Auto Keep-Alive ping active for: ${pingUrl} (every 10 minutes)`);
+    setInterval(async () => {
+      try {
+        const client = pingUrl.startsWith('https') ? await import('node:https') : await import('node:http');
+        client.get(pingUrl, (res) => {
+          // Keep-alive ping successfully received by external proxy
+        }).on('error', () => {});
+      } catch (_) {}
+    }, 10 * 60 * 1000);
+  }
 } catch (err) {
   fastify.log.error ? fastify.log.error(err) : console.error(err);
   process.exit(1);
