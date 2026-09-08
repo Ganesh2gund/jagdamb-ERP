@@ -11,6 +11,10 @@ class AppFormatters {
     return _currencyFormat.format(amount);
   }
 
+  static String currency(num amount) {
+    return _currencyFormat.format(amount);
+  }
+
   static String formatDate(DateTime date) {
     return DateFormat('dd MMM yyyy').format(date);
   }

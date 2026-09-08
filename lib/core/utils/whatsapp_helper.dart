@@ -193,4 +193,96 @@ class WhatsAppHelper {
       return false;
     }
   }
+
+  /// Direct WhatsApp sender for Banquet Hall bookings
+  static Future<bool> sendBanquetWhatsApp({
+    required BuildContext context,
+    required String rawPhone,
+    required String customerName,
+    required String bookingNumber,
+    required String hallName,
+    required String eventType,
+    required String eventDate,
+    required String slot,
+    required int expectedGuests,
+    String? packageName,
+    double pricePerPlate = 0.0,
+    double foodTotal = 0.0,
+    double hallRent = 0.0,
+    double extraCharges = 0.0,
+    required double grandTotal,
+    double advancePaid = 0.0,
+    double balanceDue = 0.0,
+    String? hotelName,
+  }) async {
+    final formattedPhone = sanitizePhoneNumber(rawPhone);
+    if (formattedPhone == null || formattedPhone.isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Invalid or missing phone number.'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return false;
+    }
+
+    final hName = (hotelName != null && hotelName.trim().isNotEmpty)
+        ? hotelName.trim()
+        : (WebPrinter.hotelName.trim().isNotEmpty ? WebPrinter.hotelName.trim() : 'Hotel Jagdamb');
+
+    final isSettled = balanceDue <= 0;
+    final buffer = StringBuffer();
+    buffer.writeln('🧾 *${hName.toUpperCase()}*');
+    buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━');
+    buffer.writeln('  *BANQUET HALL BOOKING INVOICE*');
+    buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━');
+    buffer.writeln('*बुकिंग सं. (Booking No):* #$bookingNumber');
+    buffer.writeln('*ग्राहक (Client):* $customerName');
+    buffer.writeln('*इवेंट (Event):* $eventType ($slot Slot)');
+    buffer.writeln('*हॉल (Hall):* $hallName');
+    buffer.writeln('*दिनांक (Date):* $eventDate');
+    buffer.writeln('*गेस्ट संख्या (Guests):* $expectedGuests Persons');
+    if (packageName != null && packageName.isNotEmpty) {
+      buffer.writeln('*केटरिंग पैकेज:* $packageName (₹${pricePerPlate.toStringAsFixed(0)}/plate)');
+    }
+    buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━');
+    buffer.writeln('*हॉल किराया (Hall Rent):* ₹${hallRent.toStringAsFixed(0)}');
+    if (foodTotal > 0) {
+      buffer.writeln('*भोजन / केटरिंग (Food):* ₹${foodTotal.toStringAsFixed(0)}');
+    }
+    if (extraCharges > 0) {
+      buffer.writeln('*डेकोरेशन व अन्य (Extras):* ₹${extraCharges.toStringAsFixed(0)}');
+    }
+    buffer.writeln('*कुल राशि (Grand Total):* ₹${grandTotal.toStringAsFixed(0)}');
+    buffer.writeln('*जमा एडवांस (Advance Paid):* ₹${advancePaid.toStringAsFixed(0)}');
+    buffer.writeln('*बकाया राशि (Balance Due):* ₹${balanceDue.toStringAsFixed(0)}');
+    buffer.writeln('*स्थिति (Status):* ${isSettled ? "✅ PAID IN FULL" : "⏳ PARTIAL ADVANCE / PENDING"}');
+    buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━');
+    buffer.writeln('Thank you for choosing $hName for your special celebration! 🎉');
+
+    final encoded = Uri.encodeComponent(buffer.toString());
+    final url = Uri.parse('https://wa.me/$formattedPhone?text=$encoded');
+
+    try {
+      final launched = await launchUrl(url, mode: LaunchMode.externalApplication);
+      if (!launched) {
+        await launchUrl(url, mode: LaunchMode.platformDefault);
+      }
+      return true;
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to open WhatsApp.'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return false;
+    }
+  }
 }

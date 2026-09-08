@@ -15,11 +15,10 @@ import {
   Expense,
   Guest,
   Notification,
-  Room,
-  Settings,
   ReportCycle,
   Invoice,
   CafeOrder,
+  BanquetBooking,
 } from '../models/index.js';
 import { store } from '../store/index.js';
 import { hotelSettings } from './settings.routes.js';
@@ -89,20 +88,16 @@ export async function performDataCleanup(reason = 'Manual/Scheduled Cleanup') {
       await Booking.deleteMany({});
       await RestaurantOrder.deleteMany({});
       await CafeOrder.deleteMany({});
+      await BanquetBooking.deleteMany({});
       await Expense.deleteMany({});
       await Guest.deleteMany({});
       await Notification.deleteMany({});
       await Invoice.deleteMany({});
 
-      // Reset occupied room status back to available
-      await Room.updateMany({}, {
-        status: 'available',
-        currentGuestName: null,
-        currentGuestId: null,
-        currentBookingId: null,
-        checkInDate: null,
-        checkOutDate: null,
-      });
+      // Reset occupied room status back to available in Supabase & Store
+      for (const r of store.getRooms()) {
+        store.updateRoomStatus(r.id, 'available');
+      }
 
       // Advance cycle & update the same single record (Singleton pattern)
       currentCycle.cycleNumber += 1;
@@ -132,6 +127,7 @@ export async function performDataCleanup(reason = 'Manual/Scheduled Cleanup') {
     store.data.bookings = [];
     store.data.restaurantOrders = [];
     store.data.cafeOrders = [];
+    store.data.banquetBookings = [];
     store.data.expenses = [];
     store.data.guests = [];
     store.data.notifications = [];
@@ -186,12 +182,14 @@ export default async function reportRoutes(fastify) {
     const bookings = store.getBookings();
     const orders = store.getOrders();
     const cafeOrders = store.getCafeOrders ? store.getCafeOrders() : [];
+    const banquetBookings = store.getBanquetBookings ? store.getBanquetBookings() : [];
     const expenses = store.getExpenses();
 
     const roomRevenue = bookings.reduce((sum, b) => sum + (Number(b.paidAmount) || Number(b.advancePaid) || 0), 0);
     const restaurantRevenue = orders.filter(o => o.isPaid).reduce((sum, o) => sum + (Number(o.total) || 0), 0);
     const cafeRevenue = cafeOrders.filter(o => o.isPaid).reduce((sum, o) => sum + (Number(o.total) || 0), 0);
-    const totalRevenue = roomRevenue + restaurantRevenue + cafeRevenue;
+    const banquetRevenue = banquetBookings.reduce((sum, b) => sum + (Number(b.advancePaid) || 0) + (Number(b.paidAmount) || 0), 0);
+    const totalRevenue = roomRevenue + restaurantRevenue + cafeRevenue + banquetRevenue;
     const totalExpenses = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
     const netProfit = totalRevenue - totalExpenses;
 
@@ -214,12 +212,14 @@ export default async function reportRoutes(fastify) {
           roomRevenue,
           restaurantRevenue,
           cafeRevenue,
+          banquetRevenue,
           totalRevenue,
           totalExpenses,
           netProfit,
           totalBookingsCount: bookings.length,
           totalOrdersCount: orders.length,
           totalCafeOrdersCount: cafeOrders.length,
+          totalBanquetBookingsCount: banquetBookings.length,
           totalExpensesCount: expenses.length,
         },
       },
@@ -282,10 +282,27 @@ export default async function reportRoutes(fastify) {
       paymentMethod: e.paymentMethod || 'Cash',
     }));
 
+    const banquetBookings = (store.getBanquetBookings ? store.getBanquetBookings() : []).map(b => ({
+      id: b.id,
+      bookingNumber: b.bookingNumber || b.id,
+      customerName: b.customerName || 'Client',
+      customerPhone: b.customerPhone || '',
+      hallName: b.hallName || '',
+      eventType: b.eventType || 'Event',
+      eventDate: b.eventDate || '',
+      slot: b.slot || 'Evening',
+      expectedGuests: Number(b.expectedGuests) || 0,
+      grandTotal: Number(b.grandTotal) || 0,
+      advancePaid: Number(b.advancePaid) || 0,
+      balanceDue: Number(b.balanceDue) || 0,
+      status: b.status || 'confirmed',
+    }));
+
     const roomRevenue = bookings.reduce((sum, b) => sum + b.paidAmount, 0);
     const restaurantRevenue = orders.filter(o => o.isPaid).reduce((sum, o) => sum + o.total, 0);
     const cafeRevenue = cafeOrders.filter(o => o.isPaid).reduce((sum, o) => sum + o.total, 0);
-    const totalRevenue = roomRevenue + restaurantRevenue + cafeRevenue;
+    const banquetRevenue = banquetBookings.reduce((sum, b) => sum + (Number(b.advancePaid) || 0) + (Number(b.paidAmount) || 0), 0);
+    const totalRevenue = roomRevenue + restaurantRevenue + cafeRevenue + banquetRevenue;
     const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
     const netProfit = totalRevenue - totalExpenses;
 
@@ -307,17 +324,20 @@ export default async function reportRoutes(fastify) {
           roomRevenue,
           restaurantRevenue,
           cafeRevenue,
+          banquetRevenue,
           totalRevenue,
           totalExpenses,
           netProfit,
           bookingsCount: bookings.length,
           ordersCount: orders.length,
           cafeOrdersCount: cafeOrders.length,
+          banquetBookingsCount: banquetBookings.length,
           expensesCount: expenses.length,
         },
         bookings,
         orders,
         cafeOrders,
+        banquetBookings,
         expenses,
       },
     });

@@ -68,6 +68,33 @@ class ReportPdfService {
     return s.toUpperCase();
   }
 
+  // ── Helper: Safe ASCII text for Helvetica PDF Font ──────────
+  // Strips characters without Helvetica glyphs (Hindi, special symbols) to prevent PDF crashes
+  static String _safeText(dynamic text) {
+    if (text == null) return '';
+    final str = text.toString();
+    var clean = str.replaceAll('₹', 'Rs. ');
+    final buffer = StringBuffer();
+    for (int i = 0; i < clean.length; i++) {
+      final code = clean.codeUnitAt(i);
+      if ((code >= 32 && code <= 126) || code == 10 || code == 13 || code == 9) {
+        buffer.writeCharCode(code);
+      } else if (code == 160) {
+        buffer.write(' ');
+      } else if (code == 8211 || code == 8212) {
+        buffer.write('-');
+      } else if (code == 8216 || code == 8217) {
+        buffer.write("'");
+      } else if (code == 8220 || code == 8221) {
+        buffer.write('"');
+      } else if (code == 8226) {
+        buffer.write('-');
+      }
+    }
+    // Remove empty parentheses e.g. "Birthday Party ()" -> "Birthday Party"
+    return buffer.toString().replaceAll(RegExp(r'\(\s*\)'), '').trim();
+  }
+
   static Future<Uint8List> generate10DayReportPdf(Map<String, dynamic> reportData) async {
     final pdf = pw.Document();
 
@@ -76,12 +103,14 @@ class ReportPdfService {
     final summary = (reportData['summary'] as Map<String, dynamic>?) ?? {};
     final bookings = (reportData['bookings'] as List<dynamic>?) ?? [];
     final orders = (reportData['orders'] as List<dynamic>?) ?? [];
+    final cafeOrders = (reportData['cafeOrders'] as List<dynamic>?) ?? [];
+    final banquetBookings = (reportData['banquetBookings'] as List<dynamic>?) ?? [];
     final expenses = (reportData['expenses'] as List<dynamic>?) ?? [];
 
-    final hotelName = hotel['name']?.toString() ?? 'Hotel ERP';
-    final hotelPhone = hotel['phone']?.toString() ?? '';
-    final hotelEmail = hotel['email']?.toString() ?? '';
-    final hotelAddress = hotel['address']?.toString() ?? '';
+    final hotelName = _safeText(hotel['name']?.toString() ?? 'Hotel ERP');
+    final hotelPhone = _safeText(hotel['phone']?.toString() ?? '');
+    final hotelEmail = _safeText(hotel['email']?.toString() ?? '');
+    final hotelAddress = _safeText(hotel['address']?.toString() ?? '');
 
     final cycleNum = period['cycleNumber']?.toString() ?? '1';
     final startDate = period['startDate']?.toString() ?? '';
@@ -90,6 +119,7 @@ class ReportPdfService {
     final roomRev = (summary['roomRevenue'] as num?)?.toDouble() ?? 0.0;
     final restRev = (summary['restaurantRevenue'] as num?)?.toDouble() ?? 0.0;
     final cafeRev = (summary['cafeRevenue'] as num?)?.toDouble() ?? 0.0;
+    final banquetRev = (summary['banquetRevenue'] as num?)?.toDouble() ?? 0.0;
     final totalRev = (summary['totalRevenue'] as num?)?.toDouble() ?? 0.0;
     final totalExp = (summary['totalExpenses'] as num?)?.toDouble() ?? 0.0;
     final netProfit = (summary['netProfit'] as num?)?.toDouble() ?? 0.0;
@@ -213,6 +243,12 @@ class ReportPdfService {
                 _summaryCard('Restaurant', _formatCurrency(restRev), 'Dining & F&B', PdfColors.orange800, PdfColors.orange50),
                 pw.SizedBox(width: 4),
                 _summaryCard('Cafe Rev', _formatCurrency(cafeRev), 'Express POS', PdfColors.amber900, PdfColors.amber50),
+              ],
+            ),
+            pw.SizedBox(height: 5),
+            pw.Row(
+              children: [
+                _summaryCard('Banquet Rev', _formatCurrency(banquetRev), 'Events & Functions', PdfColors.indigo900, PdfColors.indigo50),
                 pw.SizedBox(width: 4),
                 _summaryCard('Expenses', _formatCurrency(totalExp), 'Operating Outflow', PdfColors.red800, PdfColors.red50),
                 pw.SizedBox(width: 4),
@@ -238,13 +274,14 @@ class ReportPdfService {
                   final total = (b['totalAmount'] as num?)?.toDouble() ?? 0.0;
                   final paid = (b['paidAmount'] as num?)?.toDouble() ?? 0.0;
                   final due = (total - paid) > 0 ? (total - paid) : 0.0;
-                  final guestPhone = b['guestPhone']?.toString() ?? '';
-                  final guestLabel = guestPhone.isNotEmpty ? '${b['guestName']}\n($guestPhone)' : (b['guestName']?.toString() ?? '');
+                  final guestPhone = _safeText(b['guestPhone']?.toString() ?? '');
+                  final guestName = _safeText(b['guestName']?.toString() ?? 'Guest');
+                  final guestLabel = guestPhone.isNotEmpty ? '$guestName\n($guestPhone)' : guestName;
 
                   return [
-                    b['bookingNumber']?.toString() ?? '',
+                    _safeText(b['bookingNumber']?.toString() ?? ''),
                     guestLabel,
-                    'Room ${b['roomNumber'] ?? ''}',
+                    'Room ${_safeText(b['roomNumber'] ?? '')}',
                     _formatDateRange(b['checkInDate'], b['checkOutDate']),
                     _formatCurrency(total),
                     _formatCurrency(paid),
@@ -291,19 +328,19 @@ class ReportPdfService {
                 headers: ['Order #', 'Date & Time', 'Table / Service', 'Guest / Customer', 'Items Ordered', 'Bill Total', 'Payment'],
                 data: orders.map((o) {
                   final total = (o['total'] as num?)?.toDouble() ?? 0.0;
-                  final typeStr = o['type']?.toString() ?? 'dineIn';
-                  final targetStr = o['target']?.toString() ?? '';
+                  final typeStr = _safeText(o['type']?.toString() ?? 'dineIn');
+                  final targetStr = _safeText(o['target']?.toString() ?? '');
                   final serviceLabel = targetStr.isNotEmpty ? '$typeStr ($targetStr)' : typeStr;
                   final timeLabel = _formatDateTime(o['createdAt']);
 
                   return [
-                    o['orderNumber']?.toString() ?? '',
+                    _safeText(o['orderNumber']?.toString() ?? ''),
                     timeLabel,
                     serviceLabel,
-                    o['guestName']?.toString() ?? 'Walk-in',
-                    o['items']?.toString() ?? '-',
+                    _safeText(o['guestName']?.toString() ?? 'Walk-in'),
+                    _safeText(o['items']?.toString() ?? '-'),
                     _formatCurrency(total),
-                    '${o['paymentMethod'] ?? 'Cash'} ${o['isPaid'] == true ? '(Paid)' : '(Unpaid)'}',
+                    '${_safeText(o['paymentMethod'] ?? 'Cash')} ${o['isPaid'] == true ? '(Paid)' : '(Unpaid)'}',
                   ];
                 }).toList(),
                 headerStyle: const pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: PdfColors.white),
@@ -334,8 +371,118 @@ class ReportPdfService {
               ),
             pw.SizedBox(height: 12),
 
-            // ── Section 3: Expenses ───────────────────────────────
-            _sectionHeader('3', 'HOTEL OPERATIONAL EXPENSES STATEMENT', expenses.length, PdfColors.red800),
+            // ── Section 3: Cafe Orders ────────────────────────────
+            _sectionHeader('3', 'CAFE POS ORDERS STATEMENT', cafeOrders.length, PdfColors.amber800),
+            if (cafeOrders.isEmpty)
+              _emptyNotice('No cafe orders recorded during this 10-day cycle.')
+            else
+              pw.TableHelper.fromTextArray(
+                headers: ['Order #', 'Date & Time', 'Guest / Customer', 'Items Ordered', 'Bill Total', 'Payment'],
+                data: cafeOrders.map((o) {
+                  final total = (o['total'] as num?)?.toDouble() ?? 0.0;
+                  final timeLabel = _formatDateTime(o['createdAt']);
+
+                  return [
+                    _safeText(o['orderNumber']?.toString() ?? ''),
+                    timeLabel,
+                    _safeText(o['guestName']?.toString() ?? 'Walk-in'),
+                    _safeText(o['items']?.toString() ?? '-'),
+                    _formatCurrency(total),
+                    '${_safeText(o['paymentMethod'] ?? 'Cash')} ${o['isPaid'] == true ? '(Paid)' : '(Unpaid)'}',
+                  ];
+                }).toList(),
+                headerStyle: const pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: PdfColors.white),
+                headerDecoration: const pw.BoxDecoration(color: PdfColors.amber800),
+                headerPadding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+                cellStyle: const pw.TextStyle(fontSize: 7.5),
+                cellPadding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 4.5),
+                border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+                oddRowDecoration: const pw.BoxDecoration(color: PdfColors.grey50),
+                columnWidths: const {
+                  0: pw.FlexColumnWidth(2.0),
+                  1: pw.FlexColumnWidth(3.0),
+                  2: pw.FlexColumnWidth(2.4),
+                  3: pw.FlexColumnWidth(4.6),
+                  4: pw.FlexColumnWidth(2.0),
+                  5: pw.FlexColumnWidth(2.2),
+                },
+                cellAlignments: const {
+                  0: pw.Alignment.centerLeft,
+                  1: pw.Alignment.centerLeft,
+                  2: pw.Alignment.centerLeft,
+                  3: pw.Alignment.centerLeft,
+                  4: pw.Alignment.centerRight,
+                  5: pw.Alignment.center,
+                },
+              ),
+            pw.SizedBox(height: 12),
+
+            // ── Section 4: Banquet & Events Hall ──────────────────
+            _sectionHeader('4', 'BANQUET & EVENTS HALL STATEMENT', banquetBookings.length, PdfColors.indigo800),
+            if (banquetBookings.isEmpty)
+              _emptyNotice('No banquet or hall bookings recorded during this 10-day cycle.')
+            else
+              pw.TableHelper.fromTextArray(
+                headers: ['Booking #', 'Customer Name', 'Hall & Event Type', 'Event Date & Slot', 'Guests', 'Total Bill', 'Advance Paid', 'Balance Due', 'Status'],
+                data: banquetBookings.map((b) {
+                  final total = (b['grandTotal'] as num?)?.toDouble() ?? 0.0;
+                  final paid = (b['advancePaid'] as num?)?.toDouble() ?? 0.0;
+                  final due = (b['balanceDue'] as num?)?.toDouble() ?? ((total - paid) > 0 ? (total - paid) : 0.0);
+                  final phone = _safeText(b['customerPhone']?.toString() ?? '');
+                  final custName = _safeText(b['customerName']?.toString() ?? 'Client');
+                  final custLabel = phone.isNotEmpty ? '$custName\n($phone)' : custName;
+                  final hallName = _safeText(b['hallName'] ?? 'Hall');
+                  final eventType = _safeText(b['eventType'] ?? 'Event');
+                  final hallLabel = eventType.isNotEmpty ? '$hallName\n($eventType)' : hallName;
+                  final slotStr = _safeText(b['slot'] ?? '');
+                  final dateLabel = slotStr.isNotEmpty ? '${_formatDate(b['eventDate'])}\n($slotStr)' : _formatDate(b['eventDate']);
+
+                  return [
+                    _safeText(b['bookingNumber']?.toString() ?? ''),
+                    custLabel,
+                    hallLabel,
+                    dateLabel,
+                    '${b['expectedGuests'] ?? 0} Guests',
+                    _formatCurrency(total),
+                    _formatCurrency(paid),
+                    due > 0 ? _formatCurrency(due) : 'Rs. 0 (Nil)',
+                    _cleanStatus(b['status']),
+                  ];
+                }).toList(),
+                headerStyle: const pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: PdfColors.white),
+                headerDecoration: const pw.BoxDecoration(color: PdfColors.indigo800),
+                headerPadding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+                cellStyle: const pw.TextStyle(fontSize: 7.5),
+                cellPadding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 4.5),
+                border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+                oddRowDecoration: const pw.BoxDecoration(color: PdfColors.grey50),
+                columnWidths: const {
+                  0: pw.FlexColumnWidth(2.0),
+                  1: pw.FlexColumnWidth(2.6),
+                  2: pw.FlexColumnWidth(2.6),
+                  3: pw.FlexColumnWidth(2.6),
+                  4: pw.FlexColumnWidth(1.6),
+                  5: pw.FlexColumnWidth(1.9),
+                  6: pw.FlexColumnWidth(1.9),
+                  7: pw.FlexColumnWidth(1.9),
+                  8: pw.FlexColumnWidth(1.9),
+                },
+                cellAlignments: const {
+                  0: pw.Alignment.centerLeft,
+                  1: pw.Alignment.centerLeft,
+                  2: pw.Alignment.centerLeft,
+                  3: pw.Alignment.centerLeft,
+                  4: pw.Alignment.center,
+                  5: pw.Alignment.centerRight,
+                  6: pw.Alignment.centerRight,
+                  7: pw.Alignment.centerRight,
+                  8: pw.Alignment.center,
+                },
+              ),
+            pw.SizedBox(height: 12),
+
+            // ── Section 5: Expenses ───────────────────────────────
+            _sectionHeader('5', 'HOTEL OPERATIONAL EXPENSES STATEMENT', expenses.length, PdfColors.red800),
             if (expenses.isEmpty)
               _emptyNotice('No expenses recorded during this 10-day cycle.')
             else
@@ -347,9 +494,9 @@ class ReportPdfService {
 
                   return [
                     timeLabel,
-                    e['category']?.toString() ?? 'Other',
-                    e['description']?.toString() ?? '-',
-                    e['paymentMethod']?.toString() ?? 'Cash',
+                    _safeText(e['category']?.toString() ?? 'Other'),
+                    _safeText(e['description']?.toString() ?? '-'),
+                    _safeText(e['paymentMethod']?.toString() ?? 'Cash'),
                     _formatCurrency(amount),
                   ];
                 }).toList(),
@@ -402,6 +549,8 @@ class ReportPdfService {
                           '- Cycle Duration: 10-Day Period (${_formatDate(startDate)} to ${_formatDate(endDate)})\n'
                           '- Total Guest Bookings Audited: ${bookings.length} reservations\n'
                           '- Total Restaurant / F&B Orders: ${orders.length} orders\n'
+                          '- Total Cafe Orders: ${cafeOrders.length} orders\n'
+                          '- Total Banquet & Event Bookings: ${banquetBookings.length} events\n'
                           '- Total Operational Expenses: ${expenses.length} voucher(s)\n'
                           '- All records verified and reconciled with Hotel ERP system ledgers.',
                           style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey800, lineSpacing: 2),
@@ -423,8 +572,10 @@ class ReportPdfService {
                         children: [
                           _financeRow('Room Revenue:', _formatCurrency(roomRev), PdfColors.grey800),
                           _financeRow('Restaurant Revenue:', _formatCurrency(restRev), PdfColors.grey800),
+                          _financeRow('Cafe Revenue:', _formatCurrency(cafeRev), PdfColors.grey800),
+                          _financeRow('Banquet Revenue:', _formatCurrency(banquetRev), PdfColors.grey800),
                           pw.Divider(color: PdfColors.grey300, thickness: 0.5),
-                          _financeRow('Gross Inflow:', _formatCurrency(totalRev), PdfColors.blue900, isBold: true),
+                          _financeRow('Gross Inflow (Total):', _formatCurrency(totalRev), PdfColors.blue900, isBold: true),
                           _financeRow('Less Expenses:', _formatCurrency(totalExp), PdfColors.red800),
                           pw.Divider(color: PdfColors.blue900, thickness: 1),
                           _financeRow(

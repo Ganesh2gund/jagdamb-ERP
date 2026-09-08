@@ -16,6 +16,7 @@ import 'repositories/staff_repository.dart';
 import 'repositories/maintenance_repository.dart';
 import 'repositories/notification_repository.dart';
 import 'repositories/cafe_repository.dart';
+import 'repositories/banquet_repository.dart';
 
 import 'services/api_client.dart';
 import 'repositories/http_repositories.dart';
@@ -57,6 +58,7 @@ void main() async {
         Provider<StaffRepository>(create: (_) => HttpStaffRepository()),
         Provider<MaintenanceRepository>(create: (_) => HttpMaintenanceRepository()),
         Provider<NotificationRepository>(create: (_) => HttpNotificationRepository()),
+        Provider<BanquetRepository>(create: (_) => HttpBanquetRepository()),
       ],
       child: HotelErpApp(router: router),
     ),

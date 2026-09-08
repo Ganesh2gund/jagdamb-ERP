@@ -245,4 +245,204 @@ export class SupabaseMasterService {
       return false;
     }
   }
+
+  // ── 6. Cafe Menu Items ─────────────────────────────────────────
+  static async getCafeMenu() {
+    try {
+      const { data, error } = await supabase.from('cafe_menu_items').select('*').order('name', { ascending: true });
+      if (error) throw error;
+      return (data || []).map(m => ({
+        id: m.id,
+        name: m.name,
+        category: m.category,
+        price: Number(m.price) || 0,
+        isVeg: m.is_veg === true,
+        description: m.description || '',
+        isAvailable: m.is_available !== false,
+      }));
+    } catch (err) {
+      console.error('❌ Supabase getCafeMenu error:', err.message);
+      return null;
+    }
+  }
+
+  static async saveCafeMenuItem(item) {
+    try {
+      const row = {
+        id: item.id,
+        name: item.name,
+        category: item.category,
+        price: Number(item.price) || 0,
+        is_veg: item.isVeg === true,
+        description: item.description || '',
+        is_available: item.isAvailable !== false,
+        updated_at: new Date().toISOString(),
+      };
+      const { error } = await supabase.from('cafe_menu_items').upsert(row);
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      console.error('❌ Supabase saveCafeMenuItem error:', err.message);
+      return false;
+    }
+  }
+
+  static async deleteCafeMenuItem(id) {
+    try {
+      const { error } = await supabase.from('cafe_menu_items').delete().eq('id', id);
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      console.error('❌ Supabase deleteCafeMenuItem error:', err.message);
+      return false;
+    }
+  }
+
+  // ── 7. Cafe Categories ─────────────────────────────────────────
+  static async getCafeCategories() {
+    try {
+      const { data, error } = await supabase.from('cafe_categories').select('name').order('name', { ascending: true });
+      if (error) throw error;
+      return (data || []).map(c => c.name);
+    } catch (err) {
+      console.error('❌ Supabase getCafeCategories error:', err.message);
+      return null;
+    }
+  }
+
+  static async saveCafeCategory(name) {
+    try {
+      const clean = String(name).trim();
+      const id = 'cat_' + clean.toLowerCase().replace(/[^a-z0-9]/g, '_');
+      const { error } = await supabase.from('cafe_categories').upsert({ id, name: clean });
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      console.error('❌ Supabase saveCafeCategory error:', err.message);
+      return false;
+    }
+  }
+
+  static async deleteCafeCategory(name) {
+    try {
+      const clean = String(name).trim();
+      const { error: itemErr } = await supabase.from('cafe_menu_items').delete().ilike('category', clean);
+      if (itemErr) console.error('❌ Supabase deleteCafeCategory cascade error:', itemErr.message);
+
+      const { error } = await supabase.from('cafe_categories').delete().ilike('name', clean);
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      console.error('❌ Supabase deleteCafeCategory error:', err.message);
+      return false;
+    }
+  }
+
+  // ── 8. Banquet Halls (Master) ──────────────────────────────────
+  static async getBanquetHalls() {
+    try {
+      const { data, error } = await supabase.from('banquet_halls').select('*').order('name', { ascending: true });
+      if (error) throw error;
+      return (data || []).map(h => ({
+        id: h.id,
+        name: h.name,
+        capacity: Number(h.capacity) || 100,
+        baseRentMorning: Number(h.base_rent_morning) || 15000,
+        baseRentEvening: Number(h.base_rent_evening) || 25000,
+        baseRentFullDay: Number(h.base_rent_full_day) || 35000,
+        amenities: Array.isArray(h.amenities) ? h.amenities : [],
+        imageUrl: h.image_url || null,
+        status: h.status || 'available',
+      }));
+    } catch (err) {
+      console.error('❌ Supabase getBanquetHalls error:', err.message);
+      return null;
+    }
+  }
+
+  static async saveBanquetHall(hall) {
+    try {
+      const row = {
+        id: hall.id,
+        name: hall.name,
+        capacity: Number(hall.capacity) || 100,
+        base_rent_morning: Number(hall.baseRentMorning) || 15000,
+        base_rent_evening: Number(hall.baseRentEvening) || 25000,
+        base_rent_full_day: Number(hall.baseRentFullDay) || 35000,
+        amenities: Array.isArray(hall.amenities) ? hall.amenities : [],
+        image_url: hall.imageUrl || null,
+        status: hall.status || 'available',
+        updated_at: new Date().toISOString(),
+      };
+      const { error } = await supabase.from('banquet_halls').upsert(row);
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      console.error('❌ Supabase saveBanquetHall error:', err.message);
+      return false;
+    }
+  }
+
+  static async deleteBanquetHall(id) {
+    try {
+      const { error } = await supabase.from('banquet_halls').delete().eq('id', id);
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      console.error('❌ Supabase deleteBanquetHall error:', err.message);
+      return false;
+    }
+  }
+
+  // ── 9. Banquet Catering Packages (Master) ───────────────────────
+  static async getBanquetPackages() {
+    try {
+      const { data, error } = await supabase.from('banquet_packages').select('*').order('price_per_plate', { ascending: true });
+      if (error) throw error;
+      return (data || []).map(p => ({
+        id: p.id,
+        name: p.name,
+        pricePerPlate: Number(p.price_per_plate) || 0,
+        isVeg: p.is_veg !== false,
+        description: p.description || '',
+        inclusions: Array.isArray(p.inclusions) ? p.inclusions : [],
+      }));
+    } catch (err) {
+      console.error('❌ Supabase getBanquetPackages error:', err.message);
+      return null;
+    }
+  }
+
+  static async saveBanquetPackage(pkg) {
+    try {
+      const row = {
+        id: pkg.id,
+        name: pkg.name,
+        price_per_plate: Number(pkg.pricePerPlate) || 0,
+        is_veg: pkg.isVeg !== false,
+        description: pkg.description || '',
+        inclusions: Array.isArray(pkg.inclusions) ? pkg.inclusions : [],
+        updated_at: new Date().toISOString(),
+      };
+      const { error } = await supabase.from('banquet_packages').upsert(row);
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      console.error('❌ Supabase saveBanquetPackage error:', err.message);
+      return false;
+    }
+  }
+
+  static async deleteBanquetPackage(id) {
+    try {
+      const { error } = await supabase.from('banquet_packages').delete().eq('id', id);
+      if (error) throw error;
+      return true;
+    } catch (err) {
+      console.error('❌ Supabase deleteBanquetPackage error:', err.message);
+      return false;
+    }
+  }
 }
+
+

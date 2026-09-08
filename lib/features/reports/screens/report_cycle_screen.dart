@@ -221,11 +221,15 @@ class _ReportCycleScreenState extends State<ReportCycleScreen> {
     final summary = (_status['summary'] as Map<String, dynamic>?) ?? {};
     final roomRev = (summary['roomRevenue'] as num?)?.toDouble() ?? 0.0;
     final restRev = (summary['restaurantRevenue'] as num?)?.toDouble() ?? 0.0;
+    final cafeRev = (summary['cafeRevenue'] as num?)?.toDouble() ?? 0.0;
+    final banquetRev = (summary['banquetRevenue'] as num?)?.toDouble() ?? 0.0;
     final totalExp = (summary['totalExpenses'] as num?)?.toDouble() ?? 0.0;
     final netProfit = (summary['netProfit'] as num?)?.toDouble() ?? 0.0;
 
     final bookingsCount = summary['totalBookingsCount'] ?? 0;
     final ordersCount = summary['totalOrdersCount'] ?? 0;
+    final cafeOrdersCount = summary['totalCafeOrdersCount'] ?? 0;
+    final banquetBookingsCount = summary['totalBanquetBookingsCount'] ?? 0;
     final expensesCount = summary['totalExpensesCount'] ?? 0;
 
     final progress = (daysElapsed / 10).clamp(0.0, 1.0);
@@ -420,6 +424,14 @@ class _ReportCycleScreenState extends State<ReportCycleScreen> {
                   _statCard('Room Revenue', '₹${roomRev.toStringAsFixed(0)}', '$bookingsCount Bookings', AppColors.success),
                   const SizedBox(width: 10),
                   _statCard('Restaurant Sales', '₹${restRev.toStringAsFixed(0)}', '$ordersCount Orders', AppColors.cleaning),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  _statCard('Cafe Sales', '₹${cafeRev.toStringAsFixed(0)}', '$cafeOrdersCount Orders', Colors.amber.shade700),
+                  const SizedBox(width: 10),
+                  _statCard('Banquet (हॉल)', '₹${banquetRev.toStringAsFixed(0)}', '$banquetBookingsCount Events', AppColors.primary),
                 ],
               ),
               const SizedBox(height: 10),

@@ -1,20 +1,14 @@
 import { seedData } from './seedData.js';
 import {
-  Room,
   Booking,
   Guest,
-  MenuItem,
-  RestaurantCategory,
-  RestaurantTable,
   RestaurantOrder,
   Expense,
   Inventory,
   Notification,
-  Settings,
   Invoice,
   CafeOrder,
-  CafeCategory,
-  CafeMenuItem,
+  BanquetBooking,
 } from '../models/index.js';
 import mongoose from 'mongoose';
 import { SupabaseMasterService } from '../services/supabaseService.js';
@@ -35,11 +29,24 @@ class MongoBackedStore {
     // 1. Load Permanent Master Data from Supabase Cloud
     try {
       console.log('🔄 Loading Master Data from Supabase Cloud...');
-      const [supaRooms, supaMenu, supaCats, supaTables] = await Promise.all([
+      const [
+        supaRooms,
+        supaMenu,
+        supaCats,
+        supaTables,
+        supaCafeMenu,
+        supaCafeCats,
+        supaBanquetHalls,
+        supaBanquetPkgs,
+      ] = await Promise.all([
         SupabaseMasterService.getRooms(),
         SupabaseMasterService.getMenu(),
         SupabaseMasterService.getCategories(),
         SupabaseMasterService.getTables(),
+        SupabaseMasterService.getCafeMenu(),
+        SupabaseMasterService.getCafeCategories(),
+        SupabaseMasterService.getBanquetHalls(),
+        SupabaseMasterService.getBanquetPackages(),
       ]);
 
       if (supaRooms && supaRooms.length > 0) {
@@ -58,6 +65,81 @@ class MongoBackedStore {
         this.data.restaurantTables = supaTables;
         console.log(`✅ Loaded ${supaTables.length} tables from Supabase.`);
       }
+      if (supaCafeCats && supaCafeCats.length > 0) {
+        this.data.cafeCategories = supaCafeCats;
+        console.log(`✅ Loaded ${supaCafeCats.length} cafe categories from Supabase.`);
+      } else {
+        const defaultCafeCats = ['Hot Beverages', 'Cold Beverages', 'Snacks & Fast Food', 'Bakery & Desserts'];
+        this.data.cafeCategories = defaultCafeCats;
+        for (const c of defaultCafeCats) {
+          SupabaseMasterService.saveCafeCategory(c).catch(() => {});
+        }
+      }
+      if (supaCafeMenu && supaCafeMenu.length > 0) {
+        this.data.cafeMenu = supaCafeMenu;
+        console.log(`✅ Loaded ${supaCafeMenu.length} cafe menu items from Supabase.`);
+      } else {
+        const defaultCafeMenu = [
+          { id: 'cm_1', name: 'Cappuccino', category: 'Hot Beverages', price: 90, isVeg: true, description: 'Rich espresso with steamed milk foam', isAvailable: true },
+          { id: 'cm_2', name: 'Special Masala Chai', category: 'Hot Beverages', price: 30, isVeg: true, description: 'Cardamom and ginger infused tea', isAvailable: true },
+          { id: 'cm_3', name: 'Cold Coffee with Ice Cream', category: 'Cold Beverages', price: 120, isVeg: true, description: 'Chilled blended coffee topped with vanilla scoop', isAvailable: true },
+          { id: 'cm_4', name: 'Chocolate Thick Shake', category: 'Cold Beverages', price: 110, isVeg: true, description: 'Thick creamy Belgian chocolate shake', isAvailable: true },
+          { id: 'cm_5', name: 'Fresh Lime Soda', category: 'Cold Beverages', price: 60, isVeg: true, description: 'Sweet and salted refreshing soda', isAvailable: true },
+          { id: 'cm_6', name: 'Veg Grilled Cheese Sandwich', category: 'Snacks & Fast Food', price: 100, isVeg: true, description: 'Golden grilled sandwich with spiced vegetables', isAvailable: true },
+          { id: 'cm_7', name: 'Crispy French Fries', category: 'Snacks & Fast Food', price: 80, isVeg: true, description: 'Salted golden potato fries with dip', isAvailable: true },
+          { id: 'cm_8', name: 'Paneer Cheese Burger', category: 'Snacks & Fast Food', price: 130, isVeg: true, description: 'Crispy paneer patty with lettuce and cheese', isAvailable: true },
+          { id: 'cm_9', name: 'Chocolate Brownie', category: 'Bakery & Desserts', price: 90, isVeg: true, description: 'Warm gooey chocolate brownie', isAvailable: true },
+        ];
+        this.data.cafeMenu = defaultCafeMenu;
+        for (const item of defaultCafeMenu) {
+          SupabaseMasterService.saveCafeMenuItem(item).catch(() => {});
+        }
+      }
+
+      // Banquet Halls
+      if (supaBanquetHalls !== null) {
+        this.data.banquetHalls = supaBanquetHalls;
+        console.log(`✅ Loaded ${supaBanquetHalls.length} banquet halls from Supabase.`);
+      } else {
+        this.data.banquetHalls = [];
+      }
+
+      // Banquet Packages
+      if (supaBanquetPkgs && supaBanquetPkgs.length > 0) {
+        this.data.banquetPackages = supaBanquetPkgs;
+        console.log(`✅ Loaded ${supaBanquetPkgs.length} banquet packages from Supabase.`);
+      } else {
+        const defaultPkgs = [
+          {
+            id: 'pkg_silver',
+            name: 'Silver Wedding / Party Package',
+            pricePerPlate: 450,
+            isVeg: true,
+            description: 'Standard 3-course banquet meal with welcome drink',
+            inclusions: ['Welcome Drink (Mocktail)', '2 Veg Starters', 'Paneer Sabji', 'Seasonal Veg', 'Dal Fry & Jeera Rice', 'Roti / Naan', 'Gulab Jamun & Ice Cream'],
+          },
+          {
+            id: 'pkg_gold',
+            name: 'Gold Grand Maharaja Package',
+            pricePerPlate: 750,
+            isVeg: true,
+            description: 'Luxury lavish banquet spread with live counter & desserts',
+            inclusions: ['2 Welcome Drinks', '4 Starters (Paneer Tikka, Crispy Veg)', 'Shahi Paneer', 'Veg Kofta', 'Dal Makhani', 'Dum Biryani with Raita', 'Assorted Breads', '2 Desserts (Rasmalai + Kulfi)', 'Salad & Chaat Counter'],
+          },
+          {
+            id: 'pkg_corporate',
+            name: 'Corporate High-Tea & Lunch Package',
+            pricePerPlate: 350,
+            isVeg: true,
+            description: 'Business seminar package with morning tea/coffee & executive lunch',
+            inclusions: ['Morning Tea/Coffee & Cookies', 'Executive Lunch Buffet', 'Evening High Tea & Snacks'],
+          },
+        ];
+        this.data.banquetPackages = defaultPkgs;
+        for (const p of defaultPkgs) {
+          SupabaseMasterService.saveBanquetPackage(p).catch(() => {});
+        }
+      }
     } catch (err) {
       console.warn('⚠️ Supabase Master Data load warning:', err.message);
     }
@@ -70,16 +152,7 @@ class MongoBackedStore {
     try {
       console.log('🔄 Syncing transactional data with MongoDB Atlas...');
 
-      // Fallback for rooms if Supabase was empty
-      if (!this.data.rooms || this.data.rooms.length === 0) {
-        const dbRooms = await Room.find().lean();
-        this.data.rooms = (dbRooms || []).map(r => {
-          const { _id, __v, ...rest } = r;
-          return rest;
-        });
-      }
-
-      // 2. Bookings (Transactional - MongoDB)
+      // 1. Bookings (Transactional - MongoDB)
       const dbBookings = await Booking.find().sort({ createdAt: -1 }).lean();
       if (dbBookings && dbBookings.length > 0) {
         this.data.bookings = dbBookings.map(b => {
@@ -88,43 +161,13 @@ class MongoBackedStore {
         });
       }
 
-      // 3. Guests
+      // 2. Guests (Transactional - MongoDB)
       const dbGuests = await Guest.find().lean();
       if (dbGuests && dbGuests.length > 0) {
         this.data.guests = dbGuests.map(g => {
           const { _id, __v, ...rest } = g;
           return rest;
         });
-      }
-
-      // Fallback for menu if Supabase was empty
-      if (!this.data.restaurantMenu || this.data.restaurantMenu.length === 0) {
-        const dbMenu = await MenuItem.find().lean();
-        if (dbMenu && dbMenu.length > 0) {
-          this.data.restaurantMenu = dbMenu.map(m => {
-            const { _id, __v, ...rest } = m;
-            return rest;
-          });
-        }
-      }
-
-      // Fallback for categories if Supabase was empty
-      if (!this.data.restaurantCategories || this.data.restaurantCategories.length === 0) {
-        const dbCategories = await RestaurantCategory.find().lean();
-        if (dbCategories && dbCategories.length > 0) {
-          this.data.restaurantCategories = dbCategories.map(c => c.name);
-        }
-      }
-
-      // Fallback for tables if Supabase was empty
-      if (!this.data.restaurantTables || this.data.restaurantTables.length === 0) {
-        const dbTables = await RestaurantTable.find().lean();
-        if (dbTables && dbTables.length > 0) {
-          this.data.restaurantTables = dbTables.map(t => {
-            const { _id, __v, ...rest } = t;
-            return rest;
-          });
-        }
       }
 
       // 7. Restaurant Orders (Transactional - MongoDB)
@@ -163,44 +206,7 @@ class MongoBackedStore {
         });
       }
 
-      // 11. Cafe Categories
-      const dbCafeCats = await CafeCategory.find().lean();
-      if (dbCafeCats && dbCafeCats.length > 0) {
-        this.data.cafeCategories = dbCafeCats.map(c => c.name);
-      } else {
-        const defaultCafeCats = ['Hot Beverages', 'Cold Beverages', 'Snacks & Fast Food', 'Bakery & Desserts'];
-        this.data.cafeCategories = defaultCafeCats;
-        for (const c of defaultCafeCats) {
-          CafeCategory.create({ name: c }).catch(() => {});
-        }
-      }
-
-      // 12. Cafe Menu Items
-      const dbCafeMenu = await CafeMenuItem.find().lean();
-      if (dbCafeMenu && dbCafeMenu.length > 0) {
-        this.data.cafeMenu = dbCafeMenu.map(m => {
-          const { _id, __v, ...rest } = m;
-          return rest;
-        });
-      } else {
-        const defaultCafeMenu = [
-          { id: 'cm_1', name: 'Cappuccino', category: 'Hot Beverages', price: 90, isVeg: true, description: 'Rich espresso with steamed milk foam', isAvailable: true },
-          { id: 'cm_2', name: 'Special Masala Chai', category: 'Hot Beverages', price: 30, isVeg: true, description: 'Cardamom and ginger infused tea', isAvailable: true },
-          { id: 'cm_3', name: 'Cold Coffee with Ice Cream', category: 'Cold Beverages', price: 120, isVeg: true, description: 'Chilled blended coffee topped with vanilla scoop', isAvailable: true },
-          { id: 'cm_4', name: 'Chocolate Thick Shake', category: 'Cold Beverages', price: 110, isVeg: true, description: 'Thick creamy Belgian chocolate shake', isAvailable: true },
-          { id: 'cm_5', name: 'Fresh Lime Soda', category: 'Cold Beverages', price: 60, isVeg: true, description: 'Sweet and salted refreshing soda', isAvailable: true },
-          { id: 'cm_6', name: 'Veg Grilled Cheese Sandwich', category: 'Snacks & Fast Food', price: 100, isVeg: true, description: 'Golden grilled sandwich with spiced vegetables', isAvailable: true },
-          { id: 'cm_7', name: 'Crispy French Fries', category: 'Snacks & Fast Food', price: 80, isVeg: true, description: 'Salted golden potato fries with dip', isAvailable: true },
-          { id: 'cm_8', name: 'Paneer Cheese Burger', category: 'Snacks & Fast Food', price: 130, isVeg: true, description: 'Crispy paneer patty with lettuce and cheese', isAvailable: true },
-          { id: 'cm_9', name: 'Chocolate Brownie', category: 'Bakery & Desserts', price: 90, isVeg: true, description: 'Warm gooey chocolate brownie', isAvailable: true },
-        ];
-        this.data.cafeMenu = defaultCafeMenu;
-        for (const item of defaultCafeMenu) {
-          CafeMenuItem.create(item).catch(() => {});
-        }
-      }
-
-      // 13. Cafe Orders (Transactional)
+      // 11. Cafe Orders (Transactional - MongoDB)
       const dbCafeOrders = await CafeOrder.find().sort({ createdAt: -1 }).lean();
       if (dbCafeOrders && dbCafeOrders.length > 0) {
         this.data.cafeOrders = dbCafeOrders.map(o => {
@@ -209,6 +215,17 @@ class MongoBackedStore {
         });
       } else {
         this.data.cafeOrders = [];
+      }
+
+      // 12. Banquet Bookings (Transactional - MongoDB)
+      const dbBanquetBookings = await BanquetBooking.find().sort({ eventDate: -1 }).lean();
+      if (dbBanquetBookings && dbBanquetBookings.length > 0) {
+        this.data.banquetBookings = dbBanquetBookings.map(b => {
+          const { _id, __v, ...rest } = b;
+          return rest;
+        });
+      } else {
+        this.data.banquetBookings = [];
       }
 
       this.isMongoConnected = true;
@@ -254,21 +271,6 @@ class MongoBackedStore {
     // Save to Supabase Cloud (Master)
     SupabaseMasterService.saveRoom(room).catch(e => console.error('Error updating room in Supabase:', e.message));
 
-    if (this.isConnected()) {
-      Room.findOneAndUpdate(
-        { $or: [{ id: room.id }, { number: room.number }] },
-        {
-          status: room.status,
-          maintenanceNote: room.maintenanceNote,
-          currentGuestName: room.currentGuestName || null,
-          currentGuestId: room.currentGuestId || null,
-          currentBookingId: room.currentBookingId || null,
-          checkInDate: room.checkInDate || null,
-          checkOutDate: room.checkOutDate || null,
-        }
-      ).catch(e => console.error('Error updating room in Mongo:', e.message));
-    }
-
     return room;
   }
 
@@ -284,20 +286,6 @@ class MongoBackedStore {
 
     // Save to Supabase Cloud (Master)
     SupabaseMasterService.saveRoom(room).catch(e => console.error('Error checking in room in Supabase:', e.message));
-
-    if (this.isConnected()) {
-      Room.findOneAndUpdate(
-        { $or: [{ id: room.id }, { number: room.number }] },
-        {
-          status: 'occupied',
-          currentGuestId: guestId,
-          currentGuestName: guestName,
-          currentBookingId: bookingId,
-          checkInDate,
-          checkOutDate,
-        }
-      ).catch(e => console.error('Error in checkInRoom Mongo:', e.message));
-    }
 
     return room;
   }
@@ -316,10 +304,6 @@ class MongoBackedStore {
     // Save to Supabase Cloud (Master)
     SupabaseMasterService.saveRoom(newRoom).catch(e => console.error('Error creating room in Supabase:', e.message));
 
-    if (this.isConnected()) {
-      Room.create(newRoom).catch(e => console.error('Error creating room in Mongo:', e.message));
-    }
-
     return newRoom;
   }
 
@@ -334,13 +318,6 @@ class MongoBackedStore {
     // Save to Supabase Cloud (Master)
     SupabaseMasterService.saveRoom(room).catch(e => console.error('Error updating room in Supabase:', e.message));
 
-    if (this.isConnected()) {
-      Room.findOneAndUpdate(
-        { $or: [{ id: room.id }, { number: room.number }] },
-        updates
-      ).catch(e => console.error('Error updating room in Mongo:', e.message));
-    }
-
     return room;
   }
 
@@ -350,11 +327,6 @@ class MongoBackedStore {
       const removed = this.data.rooms.splice(idx, 1)[0];
       // Delete from Supabase Cloud (Master)
       SupabaseMasterService.deleteRoom(removed.id).catch(e => console.error('Error deleting room from Supabase:', e.message));
-
-      if (this.isConnected()) {
-        Room.deleteOne({ $or: [{ id: removed.id }, { number: removed.number }] })
-          .catch(e => console.error('Error deleting room from Mongo:', e.message));
-      }
     }
   }
 
@@ -382,12 +354,7 @@ class MongoBackedStore {
     if (room && room.status === 'available') {
       room.status = 'reserved';
       room.currentGuestName = newBooking.guestName;
-      if (this.isConnected()) {
-        Room.findOneAndUpdate(
-          { $or: [{ id: room.id }, { number: room.number }] },
-          { status: 'reserved', currentGuestName: newBooking.guestName }
-        ).catch(e => console.error('Error updating room status in Mongo:', e.message));
-      }
+      SupabaseMasterService.saveRoom(room).catch(() => {});
     }
 
     // Auto-create or link guest record
@@ -460,18 +427,14 @@ class MongoBackedStore {
         oldRoom.status = 'available';
         delete oldRoom.currentGuestName;
         delete oldRoom.currentBookingId;
-        if (this.isConnected()) {
-          Room.findOneAndUpdate({ id: oldRoom.id }, { status: 'available', currentGuestName: null, currentBookingId: null }).catch(() => {});
-        }
+        SupabaseMasterService.saveRoom(oldRoom).catch(() => {});
       }
       const newRoom = this.getRoomById(updates.roomId);
       if (newRoom && newRoom.status === 'available') {
         newRoom.status = 'reserved';
         newRoom.currentGuestName = updates.guestName || booking.guestName;
         newRoom.currentBookingId = booking.id;
-        if (this.isConnected()) {
-          Room.findOneAndUpdate({ id: newRoom.id }, { status: 'reserved', currentGuestName: newRoom.currentGuestName, currentBookingId: booking.id }).catch(() => {});
-        }
+        SupabaseMasterService.saveRoom(newRoom).catch(() => {});
       }
     }
 
@@ -502,16 +465,7 @@ class MongoBackedStore {
       delete room.currentBookingId;
       delete room.checkInDate;
       delete room.checkOutDate;
-      if (this.isConnected()) {
-        Room.findOneAndUpdate({ id: room.id }, {
-          status: 'available',
-          currentGuestName: null,
-          currentGuestId: null,
-          currentBookingId: null,
-          checkInDate: null,
-          checkOutDate: null,
-        }).catch(() => {});
-      }
+      SupabaseMasterService.saveRoom(room).catch(() => {});
     }
 
     if (this.isConnected()) {
@@ -572,10 +526,6 @@ class MongoBackedStore {
     // Save to Supabase Cloud (Master)
     SupabaseMasterService.saveMenuItem(newItem).catch(e => console.error('Error saving menu item in Supabase:', e.message));
 
-    if (this.isConnected()) {
-      MenuItem.create(newItem).catch(e => console.error('Error creating menu item in Mongo:', e.message));
-    }
-
     return newItem;
   }
 
@@ -594,10 +544,6 @@ class MongoBackedStore {
     // Save to Supabase Cloud (Master)
     SupabaseMasterService.saveMenuItem(item).catch(e => console.error('Error updating menu item in Supabase:', e.message));
 
-    if (this.isConnected()) {
-      MenuItem.findOneAndUpdate({ id: item.id }, updates).catch(e => console.error('Error updating menu item in Mongo:', e.message));
-    }
-
     return item;
   }
 
@@ -610,9 +556,6 @@ class MongoBackedStore {
       // Delete from Supabase Cloud (Master)
       SupabaseMasterService.deleteMenuItem(removed.id).catch(e => console.error('Error deleting menu item from Supabase:', e.message));
 
-      if (this.isConnected()) {
-        MenuItem.deleteOne({ id: removed.id }).catch(e => console.error('Error deleting menu item in Mongo:', e.message));
-      }
       return true;
     }
     return false;
@@ -630,10 +573,6 @@ class MongoBackedStore {
       this.data.restaurantCategories.push(clean);
       // Save to Supabase Cloud (Master)
       SupabaseMasterService.saveCategory(clean).catch(e => console.error('Error saving category in Supabase:', e.message));
-
-      if (this.isConnected()) {
-        RestaurantCategory.create({ name: clean }).catch(e => console.error('Error creating category in Mongo:', e.message));
-      }
     }
     return clean;
   }
@@ -655,10 +594,6 @@ class MongoBackedStore {
       // Delete from Supabase Cloud (Master) - cascade deletes category & menu items
       SupabaseMasterService.deleteCategory(clean).catch(e => console.error('Error deleting category from Supabase:', e.message));
 
-      if (this.isConnected()) {
-        RestaurantCategory.deleteOne({ name: clean }).catch(e => console.error('Error deleting category in Mongo:', e.message));
-        MenuItem.deleteMany({ category: { $regex: new RegExp(`^${clean}$`, 'i') } }).catch(e => console.error('Error deleting category menu items in Mongo:', e.message));
-      }
       return true;
     }
     return false;
@@ -688,10 +623,6 @@ class MongoBackedStore {
     // Save to Supabase Cloud (Master)
     SupabaseMasterService.saveTable(newTable).catch(e => console.error('Error saving table in Supabase:', e.message));
 
-    if (this.isConnected()) {
-      RestaurantTable.create(newTable).catch(e => console.error('Error creating table in Mongo:', e.message));
-    }
-
     return newTable;
   }
 
@@ -703,10 +634,6 @@ class MongoBackedStore {
 
     // Save to Supabase Cloud (Master)
     SupabaseMasterService.saveTable(table).catch(e => console.error('Error updating table in Supabase:', e.message));
-
-    if (this.isConnected()) {
-      RestaurantTable.findOneAndUpdate({ id: table.id }, updates).catch(e => console.error('Error updating table in Mongo:', e.message));
-    }
 
     return table;
   }
@@ -720,9 +647,6 @@ class MongoBackedStore {
       // Delete from Supabase Cloud (Master)
       SupabaseMasterService.deleteTable(removed.id).catch(e => console.error('Error deleting table from Supabase:', e.message));
 
-      if (this.isConnected()) {
-        RestaurantTable.deleteOne({ id: removed.id }).catch(e => console.error('Error deleting table in Mongo:', e.message));
-      }
       return true;
     }
     return false;
@@ -737,11 +661,6 @@ class MongoBackedStore {
 
     // Save to Supabase Cloud (Master)
     SupabaseMasterService.saveTable(table).catch(e => console.error('Error updating table status in Supabase:', e.message));
-
-    if (this.isConnected()) {
-      RestaurantTable.findOneAndUpdate({ id: table.id }, { status, currentOrderId, currentBillAmount })
-        .catch(e => console.error('Error updating table status in Mongo:', e.message));
-    }
 
     return table;
   }
@@ -869,9 +788,9 @@ class MongoBackedStore {
     };
     this.data.cafeMenu.push(newItem);
 
-    if (this.isConnected()) {
-      CafeMenuItem.create(newItem).catch(e => console.error('Error creating CafeMenuItem in Mongo:', e.message));
-    }
+    // Save to Supabase Cloud (Master)
+    SupabaseMasterService.saveCafeMenuItem(newItem).catch(e => console.error('Error saving CafeMenuItem in Supabase:', e.message));
+
     return newItem;
   }
 
@@ -885,9 +804,9 @@ class MongoBackedStore {
     if (updates.description !== undefined) item.description = updates.description;
     if (updates.isAvailable !== undefined) item.isAvailable = updates.isAvailable;
 
-    if (this.isConnected()) {
-      CafeMenuItem.findOneAndUpdate({ id: item.id }, updates).catch(e => console.error('Error updating CafeMenuItem in Mongo:', e.message));
-    }
+    // Save to Supabase Cloud (Master)
+    SupabaseMasterService.saveCafeMenuItem(item).catch(e => console.error('Error updating CafeMenuItem in Supabase:', e.message));
+
     return item;
   }
 
@@ -897,9 +816,9 @@ class MongoBackedStore {
     const idx = this.data.cafeMenu.findIndex(m => String(m.id) === strId);
     if (idx !== -1) {
       const removed = this.data.cafeMenu.splice(idx, 1)[0];
-      if (this.isConnected()) {
-        CafeMenuItem.deleteOne({ id: removed.id }).catch(e => console.error('Error deleting CafeMenuItem in Mongo:', e.message));
-      }
+      // Delete from Supabase Cloud (Master)
+      SupabaseMasterService.deleteCafeMenuItem(removed.id).catch(e => console.error('Error deleting CafeMenuItem in Supabase:', e.message));
+
       return true;
     }
     return false;
@@ -915,9 +834,8 @@ class MongoBackedStore {
     const clean = String(name).trim();
     if (!this.data.cafeCategories.includes(clean)) {
       this.data.cafeCategories.push(clean);
-      if (this.isConnected()) {
-        CafeCategory.create({ name: clean }).catch(e => console.error('Error creating CafeCategory in Mongo:', e.message));
-      }
+      // Save to Supabase Cloud (Master)
+      SupabaseMasterService.saveCafeCategory(clean).catch(e => console.error('Error saving CafeCategory in Supabase:', e.message));
     }
     return clean;
   }
@@ -935,10 +853,9 @@ class MongoBackedStore {
         );
       }
 
-      if (this.isConnected()) {
-        CafeCategory.deleteOne({ name: clean }).catch(e => console.error('Error deleting CafeCategory in Mongo:', e.message));
-        CafeMenuItem.deleteMany({ category: { $regex: new RegExp(`^${clean}$`, 'i') } }).catch(e => console.error('Error cascade deleting cafe items in Mongo:', e.message));
-      }
+      // Delete from Supabase Cloud (Master)
+      SupabaseMasterService.deleteCafeCategory(clean).catch(e => console.error('Error deleting CafeCategory in Supabase:', e.message));
+
       return true;
     }
     return false;
@@ -1154,6 +1071,202 @@ class MongoBackedStore {
     return notif;
   }
 
+  // ── Banquet: Halls (Master - Supabase) ────────────
+  getBanquetHalls() {
+    if (!this.data.banquetHalls) this.data.banquetHalls = [];
+    return this.data.banquetHalls;
+  }
+
+  getBanquetHallById(id) {
+    return (this.data.banquetHalls || []).find(h => String(h.id) === String(id));
+  }
+
+  addBanquetHall(payload) {
+    if (!this.data.banquetHalls) this.data.banquetHalls = [];
+    const newHall = {
+      id: 'hall_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      name: payload.name || 'New Banquet Hall',
+      capacity: Number(payload.capacity) || 100,
+      baseRentMorning: Number(payload.baseRentMorning) || 15000,
+      baseRentEvening: Number(payload.baseRentEvening) || 25000,
+      baseRentFullDay: Number(payload.baseRentFullDay) || 35000,
+      amenities: Array.isArray(payload.amenities) ? payload.amenities : [],
+      imageUrl: payload.imageUrl || null,
+      status: payload.status || 'available',
+    };
+    this.data.banquetHalls.push(newHall);
+
+    // Save to Supabase Cloud (Master)
+    SupabaseMasterService.saveBanquetHall(newHall).catch(e => console.error('Error saving BanquetHall in Supabase:', e.message));
+
+    return newHall;
+  }
+
+  updateBanquetHall(id, updates) {
+    const hall = this.getBanquetHallById(id);
+    if (!hall) return null;
+    if (updates.name !== undefined) hall.name = updates.name;
+    if (updates.capacity !== undefined) hall.capacity = Number(updates.capacity) || 100;
+    if (updates.baseRentMorning !== undefined) hall.baseRentMorning = Number(updates.baseRentMorning) || 15000;
+    if (updates.baseRentEvening !== undefined) hall.baseRentEvening = Number(updates.baseRentEvening) || 25000;
+    if (updates.baseRentFullDay !== undefined) hall.baseRentFullDay = Number(updates.baseRentFullDay) || 35000;
+    if (updates.amenities !== undefined) hall.amenities = Array.isArray(updates.amenities) ? updates.amenities : [];
+    if (updates.status !== undefined) hall.status = updates.status;
+    if (updates.imageUrl !== undefined) hall.imageUrl = updates.imageUrl;
+
+    // Save to Supabase Cloud (Master)
+    SupabaseMasterService.saveBanquetHall(hall).catch(e => console.error('Error updating BanquetHall in Supabase:', e.message));
+
+    return hall;
+  }
+
+  deleteBanquetHall(id) {
+    if (!this.data.banquetHalls) return false;
+    const strId = String(id).trim();
+    const idx = this.data.banquetHalls.findIndex(h => String(h.id) === strId);
+    if (idx !== -1) {
+      const removed = this.data.banquetHalls.splice(idx, 1)[0];
+      // Delete from Supabase Cloud (Master)
+      SupabaseMasterService.deleteBanquetHall(removed.id).catch(e => console.error('Error deleting BanquetHall in Supabase:', e.message));
+      return true;
+    }
+    return false;
+  }
+
+  // ── Banquet: Packages (Master - Supabase) ─────────
+  getBanquetPackages() {
+    if (!this.data.banquetPackages) this.data.banquetPackages = [];
+    return this.data.banquetPackages;
+  }
+
+  addBanquetPackage(payload) {
+    if (!this.data.banquetPackages) this.data.banquetPackages = [];
+    const newPkg = {
+      id: 'pkg_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      name: payload.name || 'New Package',
+      pricePerPlate: Number(payload.pricePerPlate) || 400,
+      isVeg: payload.isVeg !== false,
+      description: payload.description || '',
+      inclusions: Array.isArray(payload.inclusions) ? payload.inclusions : [],
+    };
+    this.data.banquetPackages.push(newPkg);
+
+    // Save to Supabase Cloud (Master)
+    SupabaseMasterService.saveBanquetPackage(newPkg).catch(e => console.error('Error saving BanquetPackage in Supabase:', e.message));
+
+    return newPkg;
+  }
+
+  deleteBanquetPackage(id) {
+    if (!this.data.banquetPackages) return false;
+    const strId = String(id).trim();
+    const idx = this.data.banquetPackages.findIndex(p => String(p.id) === strId);
+    if (idx !== -1) {
+      const removed = this.data.banquetPackages.splice(idx, 1)[0];
+      // Delete from Supabase Cloud (Master)
+      SupabaseMasterService.deleteBanquetPackage(removed.id).catch(e => console.error('Error deleting BanquetPackage in Supabase:', e.message));
+      return true;
+    }
+    return false;
+  }
+
+  // ── Banquet: Bookings (Transactional - MongoDB) ───
+  getBanquetBookings() {
+    if (!this.data.banquetBookings) this.data.banquetBookings = [];
+    return this.data.banquetBookings;
+  }
+
+  getBanquetBookingById(id) {
+    return (this.data.banquetBookings || []).find(b => String(b.id) === String(id) || String(b.bookingNumber) === String(id));
+  }
+
+  createBanquetBooking(payload) {
+    if (!this.data.banquetBookings) this.data.banquetBookings = [];
+    const count = this.data.banquetBookings.length + 1;
+    const bookingNumber = `BNQ-2026-${String(count).padStart(3, '0')}`;
+
+    const expectedGuests = Number(payload.expectedGuests) || 100;
+    const pricePerPlate = Number(payload.pricePerPlate) || 0;
+    const foodTotal = payload.foodTotal !== undefined ? Number(payload.foodTotal) : (expectedGuests * pricePerPlate);
+    const hallRent = Number(payload.hallRent) || 0;
+    const extraCharges = Number(payload.extraCharges) || 0;
+    const tax = Number(payload.tax) || 0;
+    const grandTotal = payload.grandTotal !== undefined ? Number(payload.grandTotal) : (foodTotal + hallRent + extraCharges + tax);
+    const advancePaid = Number(payload.advancePaid) || 0;
+    const balanceDue = Math.max(0, grandTotal - advancePaid);
+
+    const newBooking = {
+      id: 'bnq_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      bookingNumber,
+      hallId: payload.hallId || '',
+      hallName: payload.hallName || '',
+      customerName: payload.customerName || '',
+      customerPhone: payload.customerPhone || '',
+      customerEmail: payload.customerEmail || '',
+      eventType: payload.eventType || 'Wedding',
+      eventDate: payload.eventDate || new Date().toISOString().split('T')[0],
+      slot: payload.slot || 'Evening',
+      expectedGuests,
+      packageId: payload.packageId || '',
+      packageName: payload.packageName || '',
+      pricePerPlate,
+      foodTotal,
+      hallRent,
+      extraCharges,
+      tax,
+      grandTotal,
+      advancePaid,
+      balanceDue,
+      status: payload.status || 'confirmed',
+      notes: payload.notes || '',
+      createdAt: new Date().toISOString(),
+    };
+
+    this.data.banquetBookings.unshift(newBooking);
+
+    if (this.isConnected()) {
+      BanquetBooking.create(newBooking).catch(e => console.error('Error creating BanquetBooking in Mongo:', e.message));
+    }
+
+    return newBooking;
+  }
+
+  updateBanquetBooking(id, updates) {
+    const booking = this.getBanquetBookingById(id);
+    if (!booking) return null;
+
+    Object.assign(booking, updates);
+    if (updates.advancePaid !== undefined || updates.grandTotal !== undefined) {
+      booking.balanceDue = Math.max(0, (booking.grandTotal || 0) - (booking.advancePaid || 0));
+    }
+
+    if (this.isConnected()) {
+      BanquetBooking.findOneAndUpdate(
+        { $or: [{ id: booking.id }, { bookingNumber: booking.bookingNumber }] },
+        updates
+      ).catch(e => console.error('Error updating BanquetBooking in Mongo:', e.message));
+    }
+
+    return booking;
+  }
+
+  cancelBanquetBooking(id, reason = '') {
+    const booking = this.getBanquetBookingById(id);
+    if (!booking) return null;
+
+    booking.status = 'cancelled';
+    booking.notes = (booking.notes ? booking.notes + '\n' : '') + `Cancelled: ${reason}`;
+
+    if (this.isConnected()) {
+      BanquetBooking.findOneAndUpdate(
+        { $or: [{ id: booking.id }, { bookingNumber: booking.bookingNumber }] },
+        { status: 'cancelled', notes: booking.notes }
+      ).catch(e => console.error('Error cancelling BanquetBooking in Mongo:', e.message));
+    }
+
+    return booking;
+  }
+
   // ── Dashboard Stats ─────────────────────────────
   getDashboardSummary() {
     const rooms = this.data.rooms;
@@ -1173,7 +1286,15 @@ class MongoBackedStore {
     const paidRestaurantOrders = (this.data.restaurantOrders || []).filter(o => o.isPaid === true);
     const restaurantRevenue = paidRestaurantOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
 
-    const revenueToday = roomRevenue + restaurantRevenue;
+    // Cafe revenue from paid orders
+    const paidCafeOrders = (this.data.cafeOrders || []).filter(o => o.isPaid === true);
+    const cafeRevenue = paidCafeOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+
+    // Banquet revenue from active bookings
+    const activeBanquetBookings = (this.data.banquetBookings || []).filter(b => b.status !== 'cancelled');
+    const banquetRevenue = activeBanquetBookings.reduce((sum, b) => sum + (Number(b.advancePaid) || 0) + (Number(b.paidAmount) || 0), 0);
+
+    const revenueToday = roomRevenue + restaurantRevenue + cafeRevenue + banquetRevenue;
     const pendingCheckIns = this.data.bookings.filter(b => b.status === 'confirmed').length;
 
     return {
@@ -1187,6 +1308,8 @@ class MongoBackedStore {
       revenueToday,
       roomRevenue,
       restaurantRevenue,
+      cafeRevenue,
+      banquetRevenue,
       pendingCheckIns,
       activeGuests: occupied * 2,
     };

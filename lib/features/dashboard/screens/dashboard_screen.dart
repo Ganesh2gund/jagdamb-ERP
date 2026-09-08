@@ -16,6 +16,8 @@ import '../../../models/room.dart';
 import '../../../models/booking.dart';
 import '../../../models/restaurant.dart';
 import '../../../models/cafe.dart';
+import '../../../models/banquet.dart';
+import '../../../repositories/banquet_repository.dart';
 import '../../../widgets/common_widgets.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -31,6 +33,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<Booking> _bookings = [];
   List<RestaurantOrder> _restaurantOrders = [];
   List<CafeOrder> _cafeOrders = [];
+  List<BanquetBooking> _banquetBookings = [];
   int _unreadNotifications = 0;
   String _hotelName = AppConstants.hotelName;
 
@@ -59,11 +62,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }).catchError((_) {});
     } catch (_) {}
 
+    if (!mounted) return;
     final roomRepo = context.read<RoomRepository>();
     final bookingRepo = context.read<BookingRepository>();
     final notifRepo = context.read<NotificationRepository>();
     final restaurantRepo = context.read<RestaurantRepository>();
     final cafeRepo = context.read<CafeRepository>();
+    final banquetRepo = context.read<BanquetRepository>();
 
     final results = await Future.wait([
       roomRepo.getRooms().catchError((_) => <Room>[]),
@@ -71,6 +76,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       notifRepo.getUnreadCount().catchError((_) => 0),
       restaurantRepo.getOrders().catchError((_) => <RestaurantOrder>[]),
       cafeRepo.getOrders().catchError((_) => <CafeOrder>[]),
+      banquetRepo.getBookings().catchError((_) => <BanquetBooking>[]),
     ]);
 
     if (!mounted) return;
@@ -80,6 +86,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _unreadNotifications = results[2] as int;
       _restaurantOrders = results[3] as List<RestaurantOrder>;
       _cafeOrders = results[4] as List<CafeOrder>;
+      _banquetBookings = results[5] as List<BanquetBooking>;
       _isLoading = false;
     });
   }
@@ -239,14 +246,35 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
     final restaurantRevenue = todayPaidOrders.fold(0.0, (s, o) => s + o.total);
 
-    // Real live revenue calculated from today's paid cafe orders
+    // Real live revenue calculated from today's cafe orders
     final todayPaidCafeOrders = _cafeOrders.where((o) =>
       o.isPaid &&
       o.createdAt.year == today.year && o.createdAt.month == today.month && o.createdAt.day == today.day
     );
     final cafeRevenue = todayPaidCafeOrders.fold(0.0, (s, o) => s + o.totalAmount);
 
-    final totalRevenue = roomRevenue + restaurantRevenue + cafeRevenue;
+    // Real live revenue calculated from today's banquet bookings
+    final todayBanquetBookings = _banquetBookings.where((b) {
+      if (b.status == 'cancelled') return false;
+      if (b.createdAt != null && b.createdAt!.isNotEmpty) {
+        try {
+          final dt = DateTime.parse(b.createdAt!).toLocal();
+          if (dt.year == today.year && dt.month == today.month && dt.day == today.day) {
+            return true;
+          }
+        } catch (_) {}
+      }
+      try {
+        final ev = DateTime.parse(b.eventDate);
+        if (ev.year == today.year && ev.month == today.month && ev.day == today.day) {
+          return true;
+        }
+      } catch (_) {}
+      return false;
+    });
+    final banquetRevenue = todayBanquetBookings.fold(0.0, (s, b) => s + b.advancePaid);
+
+    final totalRevenue = roomRevenue + restaurantRevenue + cafeRevenue + banquetRevenue;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -269,12 +297,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     _buildRoomStats(totalRooms, occupied, available, cleaning, maintenance),
                     const SizedBox(height: 20),
 
-                    // Revenue card (Dynamic)
-                    _buildRevenueCard(context, totalRevenue, roomRevenue, restaurantRevenue),
+                    // Revenue card (Dynamic: Rooms + Restaurant + Cafe + Banquet)
+                    _buildRevenueCard(context, totalRevenue, roomRevenue, restaurantRevenue, cafeRevenue, banquetRevenue),
                     const SizedBox(height: 20),
 
                     // Today's activity (Dynamic)
-                    _buildTodayActivity(context, checkIns, checkOuts, upcoming, pendingPayments, cleaning),
+                    _buildTodayActivity(context, checkIns, checkOuts, upcoming, cleaning),
                     const SizedBox(height: 20),
 
                     // Alerts (Dynamic)
@@ -441,7 +469,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildRevenueCard(BuildContext context, double totalRevenue, double roomRevenue, double restaurantRevenue) {
+  Widget _buildRevenueCard(
+    BuildContext context,
+    double totalRevenue,
+    double roomRevenue,
+    double restaurantRevenue,
+    double cafeRevenue,
+    double banquetRevenue,
+  ) {
     final hasRev = totalRevenue > 0;
     return AppCard(
       child: Column(
@@ -500,7 +535,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            hasRev ? 'Total revenue collected today' : 'No revenue collected today',
+            hasRev ? 'Total revenue collected today across all streams' : 'No revenue collected today',
             style: const TextStyle(
               fontSize: 12,
               color: AppColors.textSecondary,
@@ -510,12 +545,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 20),
           const Divider(),
           const SizedBox(height: 16),
-          // Revenue breakdown
+          // Revenue breakdown: Rooms, Restaurant, Cafe, Banquet
           Row(
             children: [
               Expanded(child: _RevenueBreakdown(label: 'Rooms', amount: AppFormatters.formatCurrency(roomRevenue), icon: Icons.hotel)),
               Expanded(child: _RevenueBreakdown(label: 'Restaurant', amount: AppFormatters.formatCurrency(restaurantRevenue), icon: Icons.restaurant)),
-              const Expanded(child: _RevenueBreakdown(label: 'Other', amount: '₹0', icon: Icons.more_horiz)),
+              Expanded(child: _RevenueBreakdown(label: 'Cafe', amount: AppFormatters.formatCurrency(cafeRevenue), icon: Icons.local_cafe)),
+              Expanded(child: _RevenueBreakdown(label: 'Banquet', amount: AppFormatters.formatCurrency(banquetRevenue), icon: Icons.celebration)),
             ],
           ),
         ],
@@ -523,7 +559,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  Widget _buildTodayActivity(BuildContext context, int checkIns, int checkOuts, int upcoming, int pending, int cleaning) {
+  Widget _buildTodayActivity(BuildContext context, int checkIns, int checkOuts, int upcoming, int cleaning) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -547,13 +583,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           icon: Icons.calendar_today,
           color: AppColors.primary,
           label: '$upcoming Upcoming Bookings',
-          onTap: () => context.go('/bookings'),
-        ),
-        const SizedBox(height: 8),
-        _ActivityItem(
-          icon: Icons.payments_outlined,
-          color: AppColors.error,
-          label: '$pending Pending Payments',
           onTap: () => context.go('/bookings'),
         ),
         const SizedBox(height: 8),
@@ -679,6 +708,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
               color: AppColors.primary,
               onTap: () => context.go('/report-cycle'),
             ),
+            _QuickActionButton(
+              icon: Icons.celebration_outlined,
+              label: 'Banquet (हॉल)',
+              color: AppColors.primary,
+              onTap: () => context.push('/banquet'),
+            ),
           ],
         ),
       ],
@@ -771,7 +806,10 @@ class _RevenueBreakdown extends StatelessWidget {
       children: [
         Icon(icon, color: AppColors.primary, size: 18),
         const SizedBox(height: 6),
-        Text(amount, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary, fontFamily: 'Inter')),
+        FittedBox(
+          fit: BoxFit.scaleDown,
+          child: Text(amount, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary, fontFamily: 'Inter')),
+        ),
         const SizedBox(height: 2),
         Text(label, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontFamily: 'Inter')),
       ],
