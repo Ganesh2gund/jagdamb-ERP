@@ -19,6 +19,8 @@ abstract class BanquetRepository {
   Future<BanquetBooking?> createBooking(Map<String, dynamic> data);
   Future<BanquetBooking?> updateBooking(String id, Map<String, dynamic> data);
   Future<bool> cancelBooking(String id, {String reason = ''});
+  Future<bool> deleteBooking(String id);
+  Future<Map<String, dynamic>> getSlotAvailability(String hallId, String eventDate);
 }
 
 class MockBanquetRepository implements BanquetRepository {
@@ -195,6 +197,33 @@ class MockBanquetRepository implements BanquetRepository {
     });
     return true;
   }
+
+  @override
+  Future<Map<String, dynamic>> getSlotAvailability(String hallId, String eventDate) async {
+    final active = _bookings.where((b) => b.hallId == hallId && b.eventDate == eventDate && b.status != 'cancelled').toList();
+    final morningBooked = active.any((b) => b.slot.toLowerCase().contains('morning') || b.slot.toLowerCase().contains('full'));
+    final eveningBooked = active.any((b) => b.slot.toLowerCase().contains('evening') || b.slot.toLowerCase().contains('full'));
+    final fullDayBooked = active.isNotEmpty;
+    return {
+      'date': eventDate,
+      'hallId': hallId,
+      'slots': {
+        'morning': {'available': !morningBooked},
+        'evening': {'available': !eveningBooked},
+        'fullDay': {'available': !fullDayBooked},
+      }
+    };
+  }
+
+  @override
+  Future<bool> deleteBooking(String id) async {
+    final idx = _bookings.indexWhere((b) => b.id == id || b.bookingNumber == id);
+    if (idx != -1) {
+      _bookings.removeAt(idx);
+      return true;
+    }
+    return false;
+  }
 }
 
 class HttpBanquetRepository implements BanquetRepository {
@@ -309,6 +338,7 @@ class HttpBanquetRepository implements BanquetRepository {
         return BanquetBooking.fromJson(res['booking'] as Map<String, dynamic>);
       }
     } catch (e) {
+      if (e is ApiException) rethrow;
       dev.log('Error creating banquet booking: $e');
     }
     return _fallback.createBooking(data);
@@ -322,6 +352,7 @@ class HttpBanquetRepository implements BanquetRepository {
         return BanquetBooking.fromJson(res['booking'] as Map<String, dynamic>);
       }
     } catch (e) {
+      if (e is ApiException) rethrow;
       dev.log('Error updating banquet booking: $e');
     }
     return _fallback.updateBooking(id, data);
@@ -336,5 +367,34 @@ class HttpBanquetRepository implements BanquetRepository {
       dev.log('Error cancelling banquet booking: $e');
     }
     return _fallback.cancelBooking(id, reason: reason);
+  }
+
+  @override
+  Future<bool> deleteBooking(String id) async {
+    try {
+      final res = await _api.delete('/banquet/bookings/$id?permanent=true');
+      if (res is Map && res['success'] == true) return true;
+    } catch (e) {
+      dev.log('Error deleting banquet booking: $e');
+    }
+    return _fallback.deleteBooking(id);
+  }
+
+  @override
+  Future<Map<String, dynamic>> getSlotAvailability(String hallId, String eventDate) async {
+    try {
+      final res = await _api.get('/banquet/availability?hallId=$hallId&eventDate=$eventDate');
+      if (res is Map) {
+        if (res['availability'] is Map) {
+          return Map<String, dynamic>.from(res['availability'] as Map);
+        }
+        if (res['data'] is Map) {
+          return Map<String, dynamic>.from(res['data'] as Map);
+        }
+      }
+    } catch (e) {
+      dev.log('Error fetching banquet slot availability: $e');
+    }
+    return _fallback.getSlotAvailability(hallId, eventDate);
   }
 }

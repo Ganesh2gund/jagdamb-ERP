@@ -235,6 +235,9 @@ class HttpBookingRepository implements BookingRepository {
         'checkInNow': checkInNow, // 🚀 auto check-in flag
       });
     } catch (e) {
+      if (e is ApiException) {
+        rethrow;
+      }
       dev.log('Fastify createBooking offline: $e');
     }
     await _fallback.createBooking(booking, checkInNow: checkInNow);
@@ -295,6 +298,25 @@ class HttpBookingRepository implements BookingRepository {
       dev.log('Fastify updatePaymentStatus offline: $e');
     }
     await _fallback.updatePaymentStatus(id, status, paidAmount);
+  }
+
+  @override
+  Future<Map<String, dynamic>> extendStay(String id, int additionalNights) async {
+    try {
+      final res = await _api.post('/bookings/$id/extend', body: {
+        'additionalNights': additionalNights,
+      });
+      if (res is Map<String, dynamic>) {
+        return res;
+      }
+      return {'success': true, 'message': 'Stay extended successfully'};
+    } catch (e) {
+      if (e is ApiException) {
+        return {'success': false, 'message': e.message};
+      }
+      dev.log('Fastify extendStay offline, using fallback: $e');
+      return await _fallback.extendStay(id, additionalNights);
+    }
   }
 }
 

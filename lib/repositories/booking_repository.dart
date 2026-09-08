@@ -10,6 +10,7 @@ abstract class BookingRepository {
   Future<void> cancelBooking(String id, String reason);
   Future<void> updateBookingStatus(String id, BookingStatus status);
   Future<void> updatePaymentStatus(String id, PaymentStatus status, double paidAmount);
+  Future<Map<String, dynamic>> extendStay(String id, int additionalNights);
 }
 
 class MockBookingRepository implements BookingRepository {
@@ -59,29 +60,16 @@ class MockBookingRepository implements BookingRepository {
     await Future.delayed(const Duration(milliseconds: 300));
     final idx = _bookings.indexWhere((b) => b.id == id);
     if (idx != -1) {
-      final current = _bookings[idx];
-      _bookings[idx] = current.copyWith(
-        guestName: updates['guestName'] as String?,
-        guestPhone: updates['guestPhone'] as String?,
-        roomId: updates['roomId'] as String?,
-        roomNumber: updates['roomNumber'] as String?,
-        roomType: updates['roomType'] as String?,
-        checkIn: updates['checkIn'] as DateTime?,
-        checkOut: updates['checkOut'] as DateTime?,
-        adults: updates['adults'] as int?,
-        children: updates['children'] as int?,
-        totalAmount: (updates['totalAmount'] as num?)?.toDouble(),
-        paidAmount: (updates['paidAmount'] as num?)?.toDouble(),
-        paymentStatus: updates['paidAmount'] != null
-            ? (((updates['paidAmount'] as num).toDouble() >=
-                    ((updates['totalAmount'] as num?)?.toDouble() ??
-                        current.totalAmount))
-                ? PaymentStatus.paid
-                : (((updates['paidAmount'] as num).toDouble() > 0)
-                    ? PaymentStatus.partial
-                    : PaymentStatus.pending))
-            : current.paymentStatus,
-        specialRequest: updates['specialRequest'] as String?,
+      final old = _bookings[idx];
+      _bookings[idx] = old.copyWith(
+        guestName: updates['guestName'] ?? old.guestName,
+        guestPhone: updates['guestPhone'] ?? old.guestPhone,
+        checkIn: updates['checkIn'] ?? old.checkIn,
+        checkOut: updates['checkOut'] ?? old.checkOut,
+        adults: updates['adults'] ?? old.adults,
+        children: updates['children'] ?? old.children,
+        totalAmount: (updates['totalAmount'] as num?)?.toDouble() ?? old.totalAmount,
+        paidAmount: (updates['paidAmount'] as num?)?.toDouble() ?? old.paidAmount,
       );
     }
   }
@@ -118,5 +106,25 @@ class MockBookingRepository implements BookingRepository {
         paidAmount: paidAmount,
       );
     }
+  }
+
+  @override
+  Future<Map<String, dynamic>> extendStay(String id, int additionalNights) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    final idx = _bookings.indexWhere((b) => b.id == id);
+    if (idx != -1) {
+      final old = _bookings[idx];
+      final currentNights = old.checkOut.difference(old.checkIn).inDays.clamp(1, 999);
+      final pricePerNight = old.totalAmount / currentNights;
+      final newOut = old.checkOut.add(Duration(days: additionalNights));
+      final newNights = currentNights + additionalNights;
+      final newTotal = pricePerNight * newNights;
+      _bookings[idx] = old.copyWith(
+        checkOut: newOut,
+        totalAmount: newTotal,
+      );
+      return {'success': true, 'message': 'Stay extended'};
+    }
+    return {'success': false, 'message': 'Booking not found'};
   }
 }

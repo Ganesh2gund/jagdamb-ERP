@@ -175,7 +175,7 @@ class _BookingCard extends StatelessWidget {
                 const SizedBox(width: 6),
                 Expanded(
                   child: Text(
-                    '${AppFormatters.formatDateRange(booking.checkIn, booking.checkOut)} (${booking.nights}N)',
+                    '${AppFormatters.formatDateRange(booking.checkIn, booking.checkOut)} (${booking.nights}D)',
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontFamily: 'Inter', fontWeight: FontWeight.w500),
                   ),

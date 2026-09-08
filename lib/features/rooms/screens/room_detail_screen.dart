@@ -265,7 +265,7 @@ class _RoomDetailScreenState extends State<RoomDetailScreen> {
                   const SizedBox(height: 16),
                   const Divider(),
                   const SizedBox(height: 12),
-                  InfoRow(label: 'Price', value: '₹${room.pricePerNight.toStringAsFixed(0)}/night'),
+                  InfoRow(label: 'Price', value: '₹${room.pricePerNight.toStringAsFixed(0)}/day'),
                   InfoRow(label: 'Max Guests', value: '${room.maxGuests} guests'),
                   if (room.currentGuestName != null)
                     InfoRow(label: 'Current Guest', value: room.currentGuestName!, valueColor: AppColors.primary),

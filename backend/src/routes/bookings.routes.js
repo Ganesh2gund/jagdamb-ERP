@@ -24,6 +24,17 @@ export default async function bookingRoutes(fastify, options) {
       return reply.code(400).send({ success: false, message: 'guestName and roomId are required' });
     }
 
+    // Check date-range availability before creating booking
+    if (payload.checkInDate && payload.checkOutDate) {
+      const isFree = store.isRoomAvailableForDates(payload.roomId, payload.checkInDate, payload.checkOutDate);
+      if (!isFree) {
+        return reply.code(400).send({
+          success: false,
+          message: `Room is already reserved for another guest during the requested dates (${payload.checkInDate} to ${payload.checkOutDate}).`,
+        });
+      }
+    }
+
     const created = store.createBooking(payload);
 
     // ── Auto Check-In ──────────────────────────────
@@ -42,6 +53,17 @@ export default async function bookingRoutes(fastify, options) {
     // ───────────────────────────────────────────────
 
     return reply.code(201).send({ success: true, data: created });
+  });
+
+  // Extend in-house stay by +N night(s)
+  fastify.post('/:id/extend', async (request, reply) => {
+    const { extraNights } = request.body || {};
+    const nights = Number(extraNights) || 1;
+    const result = store.extendBookingStay(request.params.id, nights);
+    if (!result.success) {
+      return reply.code(400).send(result);
+    }
+    return reply.send(result);
   });
 
   // Update booking details (Edit)

@@ -33,7 +33,7 @@ class _BillingScreenState extends State<BillingScreen> {
     if (_booking == null) return [];
     return [
       BillItem(
-        description: 'Room ${_booking!.roomNumber} (${_booking!.roomType}) - ${_booking!.nights} night(s)',
+        description: 'Room ${_booking!.roomNumber} (${_booking!.roomType}) - ${_booking!.nights} day(s)',
         type: PaymentType.roomCharge,
         amount: _booking!.totalAmount,
         quantity: 1,
@@ -198,7 +198,7 @@ class _BillingScreenState extends State<BillingScreen> {
                       children: [
                         Text('Room: ${b.roomNumber} (${b.roomType})', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                         Text('Stay: ${AppFormatters.formatDate(b.checkIn)} - ${AppFormatters.formatDate(b.checkOut)}', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
-                        Text('${b.nights} Night(s)', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                        Text('${b.nights} Day(s)', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                       ],
                     ),
                   ],
@@ -454,7 +454,7 @@ class _BillingScreenState extends State<BillingScreen> {
                     const SizedBox(height: 12),
                     InfoRow(label: 'Guest Name', value: b.guestName),
                     InfoRow(label: 'Room Number', value: 'Room ${b.roomNumber} (${b.roomType})'),
-                    InfoRow(label: 'Stay Duration', value: '${b.nights} Night(s) (${AppFormatters.formatDate(b.checkIn)} - ${AppFormatters.formatDate(b.checkOut)})'),
+                    InfoRow(label: 'Stay Duration', value: '${b.nights} Day(s) (${AppFormatters.formatDate(b.checkIn)} - ${AppFormatters.formatDate(b.checkOut)})'),
                     InfoRow(label: 'Booking ID', value: '#${b.id.substring(0, b.id.length > 8 ? 8 : b.id.length).toUpperCase()}'),
                     const Divider(height: 20),
                     const Text(

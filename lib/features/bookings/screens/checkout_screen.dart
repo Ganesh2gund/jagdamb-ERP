@@ -187,7 +187,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
               totalAmount: _grandTotal,
               roomOrTable: 'Room ${b.roomNumber} (${b.roomType})',
               items: [
-                'Room Stay (${b.nights} night(s)) : ₹${_grandTotal.toStringAsFixed(0)}',
+                'Room Stay (${b.nights} day(s)) : ₹${_grandTotal.toStringAsFixed(0)}',
               ],
               paymentMethod: 'Direct',
               paymentStatus: 'PAID (पूर्ण भुगतान)',
@@ -446,7 +446,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                             Text(b.guestName, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, fontFamily: 'Inter')),
                             const SizedBox(height: 3),
                             Text(
-                              '${b.roomType} • ${b.nights} Night(s) • फ़ोन: ${b.guestPhone}',
+                              '${b.roomType} • ${b.nights} Day(s) • फ़ोन: ${b.guestPhone}',
                               style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontFamily: 'Inter'),
                             ),
                             const SizedBox(height: 4),
@@ -590,7 +590,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
                       const SizedBox(height: 3),
                       Text('फ़ोन: ${b.guestPhone}', style: const TextStyle(fontSize: 13, color: AppColors.textSecondary, fontFamily: 'Inter')),
                       Text(
-                        'रुकने का समय: ${b.nights} रातें (${AppFormatters.formatDate(b.checkIn)} से ${AppFormatters.formatDate(b.checkOut)})',
+                        'रुकने का समय: ${b.nights} दिन (${AppFormatters.formatDate(b.checkIn)} से ${AppFormatters.formatDate(b.checkOut)})',
                         style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontFamily: 'Inter'),
                       ),
                     ],
@@ -622,7 +622,7 @@ class _CheckOutScreenState extends State<CheckOutScreen> {
 
                 // Room Charge Row
                 _BillLine(
-                  label: 'कमरे का किराया (${b.nights} रातें × ₹${pricePerNight.toStringAsFixed(0)})',
+                  label: 'कमरे का किराया (${b.nights} दिन × ₹${pricePerNight.toStringAsFixed(0)})',
                   amount: _roomCharge,
                   isBold: true,
                 ),

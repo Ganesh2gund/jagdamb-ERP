@@ -166,6 +166,21 @@ class _RoomsScreenState extends State<RoomsScreen> {
                         room: room,
                         statusColor: _statusColor(room.status),
                         onTap: () => context.go('/rooms/${room.id}'),
+                        onMarkCleaned: room.status == RoomStatus.cleaning
+                            ? () async {
+                                final repo = context.read<RoomRepository>();
+                                await repo.updateRoomStatus(room.id, RoomStatus.available);
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('✨ Room ${room.number} की सफाई पूर्ण - अब उपलब्ध (Available) है!'),
+                                    backgroundColor: AppColors.available,
+                                    behavior: SnackBarBehavior.floating,
+                                  ),
+                                );
+                                _loadRooms();
+                              }
+                            : null,
                       );
                     },
                   ),
@@ -214,8 +229,14 @@ class _RoomCard extends StatelessWidget {
   final Room room;
   final Color statusColor;
   final VoidCallback onTap;
+  final VoidCallback? onMarkCleaned;
 
-  const _RoomCard({required this.room, required this.statusColor, required this.onTap});
+  const _RoomCard({
+    required this.room,
+    required this.statusColor,
+    required this.onTap,
+    this.onMarkCleaned,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -295,10 +316,26 @@ class _RoomCard extends StatelessWidget {
               children: [
                 StatusBadge(label: room.status.label, color: statusColor),
                 const SizedBox(height: 6),
-                Text(
-                  '₹${room.pricePerNight.toStringAsFixed(0)}/night',
-                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontFamily: 'Inter', fontWeight: FontWeight.w500),
-                ),
+                if (onMarkCleaned != null)
+                  ElevatedButton.icon(
+                    onPressed: onMarkCleaned,
+                    icon: const Icon(Icons.check_circle, size: 13),
+                    label: const Text('सफाई हो गई', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.available,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      elevation: 0,
+                    ),
+                  )
+                else
+                  Text(
+                    '₹${room.pricePerNight.toStringAsFixed(0)}/day',
+                    style: const TextStyle(fontSize: 12, color: AppColors.textSecondary, fontFamily: 'Inter', fontWeight: FontWeight.w500),
+                  ),
               ],
             ),
           ],

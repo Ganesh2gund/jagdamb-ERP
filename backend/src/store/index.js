@@ -291,7 +291,51 @@ class MongoBackedStore {
   }
 
   checkOutRoom(roomId) {
+    // When a guest checks out, room moves to 'cleaning' status so staff can prepare it
+    return this.updateRoomStatus(roomId, 'cleaning');
+  }
+
+  markRoomCleaned(roomId) {
+    // Housekeeping completes cleaning; room returns to 'available'
     return this.updateRoomStatus(roomId, 'available');
+  }
+
+  // ── Room Date-Range Availability Helper ─────────
+  isRoomAvailableForDates(roomId, checkInDate, checkOutDate, excludeBookingId = null) {
+    const room = this.getRoomById(roomId);
+    if (!room) return false;
+    if (room.status === 'maintenance') return false;
+
+    const reqIn = (checkInDate || '').split('T')[0];
+    const reqOut = (checkOutDate || '').split('T')[0];
+    if (!reqIn || !reqOut) return true;
+
+    const strRoomId = String(room.id).toLowerCase();
+    const strRoomNum = String(room.number).toLowerCase();
+
+    for (const b of (this.data.bookings || [])) {
+      if (excludeBookingId && (b.id === excludeBookingId || b.bookingNumber === excludeBookingId)) continue;
+      if (b.status === 'cancelled' || b.status === 'checkedOut') continue;
+
+      const bRoomId = String(b.roomId || b.roomNumber).toLowerCase();
+      if (bRoomId !== strRoomId && bRoomId !== strRoomNum) continue;
+
+      const bIn = (b.checkInDate || '').split('T')[0];
+      const bOut = (b.checkOutDate || '').split('T')[0];
+      if (!bIn || !bOut) continue;
+
+      // Overlap: reqIn < bOut && reqOut > bIn
+      if (reqIn < bOut && reqOut > bIn) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  getAvailableRoomsForDates(checkInDate, checkOutDate) {
+    return (this.data.rooms || []).filter(r =>
+      this.isRoomAvailableForDates(r.id, checkInDate, checkOutDate)
+    );
   }
 
   createRoom(payload) {
@@ -350,11 +394,17 @@ class MongoBackedStore {
     };
     this.data.bookings.unshift(newBooking);
 
+    // Only mark room as 'reserved' if the check-in is TODAY or in the past.
+    // If the booking is in the future, the room remains 'available' so other dates can be booked!
+    const todayStr = new Date().toISOString().split('T')[0];
+    const checkInStr = (newBooking.checkInDate || '').split('T')[0];
     const room = this.getRoomById(newBooking.roomId);
     if (room && room.status === 'available') {
-      room.status = 'reserved';
-      room.currentGuestName = newBooking.guestName;
-      SupabaseMasterService.saveRoom(room).catch(() => {});
+      if (checkInStr && checkInStr <= todayStr) {
+        room.status = 'reserved';
+        room.currentGuestName = newBooking.guestName;
+        SupabaseMasterService.saveRoom(room).catch(() => {});
+      }
     }
 
     // Auto-create or link guest record
@@ -374,6 +424,64 @@ class MongoBackedStore {
     }
 
     return newBooking;
+  }
+
+  extendBookingStay(bookingId, additionalNights = 1) {
+    const booking = this.getBookingById(bookingId);
+    if (!booking) return { success: false, message: 'Booking not found' };
+    if (booking.status !== 'checkedIn' && booking.status !== 'confirmed') {
+      return { success: false, message: 'Only active or checked-in bookings can be extended' };
+    }
+
+    const currentOut = new Date((booking.checkOutDate || new Date().toISOString()).split('T')[0]);
+    const newOut = new Date(currentOut);
+    newOut.setDate(currentOut.getDate() + Number(additionalNights));
+    const newOutStr = newOut.toISOString().split('T')[0];
+    const currentOutStr = currentOut.toISOString().split('T')[0];
+
+    // Check if room has another booking between currentOutStr and newOutStr
+    const isAvailable = this.isRoomAvailableForDates(booking.roomId, currentOutStr, newOutStr, booking.id);
+    if (!isAvailable) {
+      return {
+        success: false,
+        message: `Cannot extend: Room ${booking.roomNumber || ''} is already reserved for another guest after ${currentOutStr}. Please shift guest to another available room.`,
+      };
+    }
+
+    const room = this.getRoomById(booking.roomId);
+    const roomRate = room ? Number(room.pricePerNight) : (Number(booking.totalAmount) / (Number(booking.totalNights) || 1));
+    const addedAmount = roomRate * Number(additionalNights);
+
+    booking.checkOutDate = newOutStr;
+    booking.totalNights = (Number(booking.totalNights) || 1) + Number(additionalNights);
+    booking.totalAmount = (Number(booking.totalAmount) || 0) + addedAmount;
+    if (booking.paidAmount !== undefined && booking.totalAmount > booking.paidAmount) {
+      booking.paymentStatus = 'pending';
+    }
+
+    // Update room checkOutDate in Supabase
+    if (room && room.status === 'occupied') {
+      room.checkOutDate = newOutStr;
+      SupabaseMasterService.saveRoom(room).catch(() => {});
+    }
+
+    if (this.isConnected()) {
+      Booking.findOneAndUpdate(
+        { $or: [{ id: booking.id }, { bookingNumber: booking.bookingNumber }] },
+        {
+          checkOutDate: booking.checkOutDate,
+          totalNights: booking.totalNights,
+          totalAmount: booking.totalAmount,
+          paymentStatus: booking.paymentStatus,
+        }
+      ).catch(e => console.error('Error extending booking in Mongo:', e.message));
+    }
+
+    return {
+      success: true,
+      booking,
+      message: `Stay successfully extended by ${additionalNights} day(s) until ${newOutStr}. Total amount updated to ₹${booking.totalAmount}.`,
+    };
   }
 
   updateBookingStatus(id, status) {
@@ -1180,8 +1288,74 @@ class MongoBackedStore {
     return (this.data.banquetBookings || []).find(b => String(b.id) === String(id) || String(b.bookingNumber) === String(id));
   }
 
+  // Check which slots are free on a given date for a hall
+  getBanquetSlotAvailability(hallId, eventDate) {
+    const targetDate = (eventDate || '').split('T')[0];
+    const targetHall = String(hallId).toLowerCase();
+
+    const activeBookings = (this.data.banquetBookings || []).filter(b => {
+      if (b.status === 'cancelled') return false;
+      const bDate = (b.eventDate || '').split('T')[0];
+      const bHall = String(b.hallId).toLowerCase();
+      return bDate === targetDate && (targetHall === '' || bHall === targetHall);
+    });
+
+    const isFullDayBooked = activeBookings.some(b => String(b.slot).toLowerCase().includes('full'));
+    const isMorningBooked = activeBookings.some(b => String(b.slot).toLowerCase().includes('morning'));
+    const isEveningBooked = activeBookings.some(b => String(b.slot).toLowerCase().includes('evening'));
+
+    return {
+      date: targetDate,
+      hallId,
+      morning: !isFullDayBooked && !isMorningBooked,
+      evening: !isFullDayBooked && !isEveningBooked,
+      fullDay: !isFullDayBooked && !isMorningBooked && !isEveningBooked,
+      activeCount: activeBookings.length,
+    };
+  }
+
+  // Validates if the requested slot can be booked without double-booking
+  isBanquetSlotAvailable(hallId, eventDate, requestedSlot, excludeBookingId = null) {
+    const targetDate = (eventDate || '').split('T')[0];
+    const targetHall = String(hallId).toLowerCase();
+    const reqSlot = String(requestedSlot).toLowerCase();
+
+    const activeBookings = (this.data.banquetBookings || []).filter(b => {
+      if (excludeBookingId && (b.id === excludeBookingId || b.bookingNumber === excludeBookingId)) return false;
+      if (b.status === 'cancelled') return false;
+      const bDate = (b.eventDate || '').split('T')[0];
+      const bHall = String(b.hallId).toLowerCase();
+      return bDate === targetDate && bHall === targetHall;
+    });
+
+    // If already booked for full day, nothing else can be booked
+    const hasFullDay = activeBookings.some(b => String(b.slot).toLowerCase().includes('full'));
+    if (hasFullDay) return false;
+
+    if (reqSlot.includes('full')) {
+      // Full day requires NO other bookings at all on this date
+      return activeBookings.length === 0;
+    }
+    if (reqSlot.includes('morning')) {
+      return !activeBookings.some(b => String(b.slot).toLowerCase().includes('morning'));
+    }
+    if (reqSlot.includes('evening')) {
+      return !activeBookings.some(b => String(b.slot).toLowerCase().includes('evening'));
+    }
+    return true;
+  }
+
   createBanquetBooking(payload) {
     if (!this.data.banquetBookings) this.data.banquetBookings = [];
+
+    // Validate slot availability before creating booking to prevent double-booking
+    if (payload.hallId && payload.eventDate && payload.slot) {
+      const isAvailable = this.isBanquetSlotAvailable(payload.hallId, payload.eventDate, payload.slot);
+      if (!isAvailable) {
+        throw new Error(`The requested slot '${payload.slot}' for this hall is already booked on ${payload.eventDate}.`);
+      }
+    }
+
     const count = this.data.banquetBookings.length + 1;
     const bookingNumber = `BNQ-2026-${String(count).padStart(3, '0')}`;
 
@@ -1265,6 +1439,23 @@ class MongoBackedStore {
     }
 
     return booking;
+  }
+
+  deleteBanquetBooking(id) {
+    const strId = String(id);
+    const idx = (this.data.banquetBookings || []).findIndex(
+      b => String(b.id) === strId || String(b.bookingNumber) === strId
+    );
+    if (idx !== -1) {
+      const removed = this.data.banquetBookings.splice(idx, 1)[0];
+      if (this.isConnected()) {
+        BanquetBooking.deleteOne({
+          $or: [{ id: removed.id }, { bookingNumber: removed.bookingNumber }],
+        }).catch(e => console.error('Error deleting BanquetBooking in Mongo:', e.message));
+      }
+      return true;
+    }
+    return false;
   }
 
   // ── Dashboard Stats ─────────────────────────────

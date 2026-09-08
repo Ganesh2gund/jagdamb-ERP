@@ -78,28 +78,141 @@ export async function initReportCycle() {
   }
 }
 
-// Data cleanup function (Deletes ONLY transactional data, keeps master data)
+// Smart Data cleanup function: Cleans only past completed data, 100% PRESERVES future bookings & in-house guests
 export async function performDataCleanup(reason = 'Manual/Scheduled Cleanup') {
   try {
-    console.log(`🧹 Performing Data Cleanup (${reason})...`);
+    console.log(`🧹 Performing Smart Data Cleanup (${reason})...`);
+    const todayStr = new Date().toISOString().split('T')[0];
 
-    // 1. Delete transactional records from MongoDB
+    // 1. Transactional records cleanup from MongoDB
     if (mongoose.connection.readyState === 1) {
-      await Booking.deleteMany({});
-      await RestaurantOrder.deleteMany({});
-      await CafeOrder.deleteMany({});
-      await BanquetBooking.deleteMany({});
+      // Clean only completed/checked-out or past cancelled room bookings (Keep in-house & future bookings safe)
+      await Booking.deleteMany({ status: { $in: ['checkedOut', 'cancelled'] } });
+
+      // Clean only past, completed, or cancelled banquet bookings (Keep only future/today confirmed events safe)
+      await BanquetBooking.deleteMany({
+        $or: [
+          { eventDate: { $lt: todayStr } },
+          { status: 'completed' },
+          { status: 'cancelled' },
+        ],
+      });
+
+      // Clean only paid restaurant orders (Keep active unpaid tables safe)
+      await RestaurantOrder.deleteMany({ isPaid: true });
+
+      // Clean only paid cafe orders
+      await CafeOrder.deleteMany({ isPaid: true });
+
+      // Clean period expenses, notifications & settled invoices
       await Expense.deleteMany({});
-      await Guest.deleteMany({});
       await Notification.deleteMany({});
-      await Invoice.deleteMany({});
+      await Invoice.deleteMany({ paymentStatus: 'paid' });
+    }
 
-      // Reset occupied room status back to available in Supabase & Store
-      for (const r of store.getRooms()) {
-        store.updateRoomStatus(r.id, 'available');
+    // 2. In-memory store cleanup
+    // Retain currently in-house (checkedIn) and future (confirmed) room bookings
+    store.data.bookings = (store.data.bookings || []).filter(
+      b => b.status === 'checkedIn' || b.status === 'confirmed'
+    );
+
+    // Retain upcoming banquet events: ONLY confirmed bookings for today or future dates
+    // All completed, cancelled, or past events are deleted!
+    store.data.banquetBookings = (store.data.banquetBookings || []).filter(
+      b => b.status === 'confirmed' && b.eventDate && b.eventDate >= todayStr
+    );
+
+    // Retain active unpaid restaurant orders
+    store.data.restaurantOrders = (store.data.restaurantOrders || []).filter(
+      o => o.isPaid !== true
+    );
+
+    // Retain active unpaid cafe orders
+    store.data.cafeOrders = (store.data.cafeOrders || []).filter(
+      o => o.isPaid !== true
+    );
+
+    // Reset period expenses & notifications
+    store.data.expenses = [];
+    store.data.notifications = [];
+
+    // 3. Smart Room Status Maintenance:
+    // Keep rooms occupied if in-house guests are currently staying, keep reserved if confirmed for today
+    const activeCheckedInBookings = (store.data.bookings || []).filter(b => b.status === 'checkedIn');
+    const activeOccupiedRoomIds = new Set(
+      activeCheckedInBookings.map(b => String(b.roomId || b.roomNumber).toLowerCase())
+    );
+
+    const upcomingTodayBookings = (store.data.bookings || []).filter(
+      b => b.status === 'confirmed' && b.checkInDate && b.checkInDate <= todayStr
+    );
+    const reservedRoomIds = new Set(
+      upcomingTodayBookings.map(b => String(b.roomId || b.roomNumber).toLowerCase())
+    );
+
+    for (const r of store.data.rooms) {
+      const roomIdStr = String(r.id).toLowerCase();
+      const roomNumStr = String(r.number).toLowerCase();
+      const isOccupied = activeOccupiedRoomIds.has(roomIdStr) || activeOccupiedRoomIds.has(roomNumStr);
+      const isReserved = reservedRoomIds.has(roomIdStr) || reservedRoomIds.has(roomNumStr);
+
+      if (isOccupied) {
+        r.status = 'occupied';
+        const activeB = activeCheckedInBookings.find(
+          b => String(b.roomId || b.roomNumber).toLowerCase() === roomIdStr || String(b.roomId || b.roomNumber).toLowerCase() === roomNumStr
+        );
+        if (activeB) {
+          r.currentGuestName = activeB.guestName;
+          r.currentBookingId = activeB.id;
+          r.checkInDate = activeB.checkInDate;
+          r.checkOutDate = activeB.checkOutDate;
+        }
+        SupabaseMasterService.saveRoom(r).catch(() => {});
+      } else if (isReserved) {
+        r.status = 'reserved';
+        const upcomingB = upcomingTodayBookings.find(
+          b => String(b.roomId || b.roomNumber).toLowerCase() === roomIdStr || String(b.roomId || b.roomNumber).toLowerCase() === roomNumStr
+        );
+        if (upcomingB) {
+          r.currentGuestName = upcomingB.guestName;
+          r.currentBookingId = upcomingB.id;
+        }
+        SupabaseMasterService.saveRoom(r).catch(() => {});
+      } else {
+        // Room has no active guest, reset to available
+        r.status = 'available';
+        delete r.currentGuestName;
+        delete r.currentGuestId;
+        delete r.currentBookingId;
+        delete r.checkInDate;
+        delete r.checkOutDate;
+        SupabaseMasterService.saveRoom(r).catch(() => {});
       }
+    }
 
-      // Advance cycle & update the same single record (Singleton pattern)
+    // 4. Smart Restaurant Table Status:
+    // Do NOT reset tables that have live running orders
+    const activeUnpaidOrders = (store.data.restaurantOrders || []).filter(o => o.isPaid !== true);
+    const activeTableTargets = new Set(
+      activeUnpaidOrders.map(o => String(o.target || o.tableId || '').toLowerCase())
+    );
+
+    for (const t of (store.data.restaurantTables || [])) {
+      const tableIdStr = String(t.id).toLowerCase();
+      const tableNameStr = String(t.name || '').toLowerCase();
+      const tableNumStr = String(t.tableNumber || '').toLowerCase();
+      const isTableActive = activeTableTargets.has(tableIdStr) || activeTableTargets.has(tableNameStr) || activeTableTargets.has(tableNumStr);
+
+      if (!isTableActive) {
+        t.status = 'available';
+        t.currentOrderId = null;
+        t.currentBillAmount = 0;
+        SupabaseMasterService.saveTable(t).catch(() => {});
+      }
+    }
+
+    // 5. Advance 10-Day Cycle tracking in MongoDB
+    if (mongoose.connection.readyState === 1) {
       currentCycle.cycleNumber += 1;
       currentCycle.startDate = new Date();
       currentCycle.cleanupScheduledAt = null;
@@ -117,41 +230,12 @@ export async function performDataCleanup(reason = 'Manual/Scheduled Cleanup') {
         { upsert: true, new: true }
       );
 
-      // Keep only this 1 document in reportcycles
       if (activeCycle) {
         await ReportCycle.deleteMany({ _id: { $ne: activeCycle._id } }).catch(() => {});
       }
     }
 
-    // 2. Reset in-memory cache arrays in store
-    store.data.bookings = [];
-    store.data.restaurantOrders = [];
-    store.data.cafeOrders = [];
-    store.data.banquetBookings = [];
-    store.data.expenses = [];
-    store.data.guests = [];
-    store.data.notifications = [];
-
-    // Reset rooms in memory and sync availability to Supabase (Master definitions stay permanent)
-    for (const r of store.data.rooms) {
-      r.status = 'available';
-      delete r.currentGuestName;
-      delete r.currentGuestId;
-      delete r.currentBookingId;
-      delete r.checkInDate;
-      delete r.checkOutDate;
-      SupabaseMasterService.saveRoom(r).catch(() => {});
-    }
-
-    // Reset tables in memory and sync to Supabase
-    for (const t of (store.data.restaurantTables || [])) {
-      t.status = 'available';
-      t.currentOrderId = null;
-      t.currentBillAmount = 0;
-      SupabaseMasterService.saveTable(t).catch(() => {});
-    }
-
-    console.log('✅ Transactional data successfully cleaned from MongoDB! Master data in Supabase (Rooms, Menu, Tables, Settings) is 100% preserved.');
+    console.log('✅ Smart cleanup complete: Past completed data archived. In-house guests, future bookings & upcoming banquet events are 100% PRESERVED.');
     return true;
   } catch (err) {
     console.error('❌ Data cleanup error:', err.message);

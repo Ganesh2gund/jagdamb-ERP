@@ -265,7 +265,7 @@ class _EditBookingScreenState extends State<EditBookingScreen> {
                         return DropdownMenuItem<Room>(
                           value: r,
                           child: Text(
-                            'Room ${r.number} - ${r.type.label} (${AppFormatters.formatCurrency(r.pricePerNight)}/nt)',
+                            'Room ${r.number} - ${r.type.label} (${AppFormatters.formatCurrency(r.pricePerNight)}/day)',
                             overflow: TextOverflow.ellipsis,
                             maxLines: 1,
                           ),
@@ -312,7 +312,7 @@ class _EditBookingScreenState extends State<EditBookingScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Duration: $_nights Night(s)',
+                      'Duration: $_nights Day(s)',
                       style: const TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 16),

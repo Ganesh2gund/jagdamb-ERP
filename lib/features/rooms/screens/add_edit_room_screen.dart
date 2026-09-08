@@ -218,7 +218,7 @@ class _AddEditRoomScreenState extends State<AddEditRoomScreen> {
                         controller: _priceCtrl,
                         keyboardType: const TextInputType.numberWithOptions(decimal: true),
                         decoration: const InputDecoration(
-                          labelText: 'Price per Night (₹) *',
+                          labelText: 'Price per Day (₹) *',
                           prefixIcon: Icon(Icons.currency_rupee),
                           hintText: 'e.g. 3500',
                         ),

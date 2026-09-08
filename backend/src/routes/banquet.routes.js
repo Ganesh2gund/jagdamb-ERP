@@ -51,6 +51,16 @@ export default async function banquetRoutes(fastify) {
     return reply.send({ success: ok });
   });
 
+  // Check slot availability for hall on a specific date
+  fastify.get('/availability', async (request, reply) => {
+    const { hallId, eventDate } = request.query || {};
+    if (!hallId || !eventDate) {
+      return reply.code(400).send({ success: false, error: 'hallId and eventDate are required' });
+    }
+    const availability = store.getBanquetSlotAvailability(hallId, eventDate);
+    return reply.send({ success: true, availability });
+  });
+
   // ── Bookings ──────────────────────────────────────
   fastify.get('/bookings', async (request, reply) => {
     return reply.send({ success: true, bookings: store.getBanquetBookings() });
@@ -67,11 +77,15 @@ export default async function banquetRoutes(fastify) {
 
   fastify.post('/bookings', async (request, reply) => {
     const payload = request.body || {};
-    if (!payload.customerName || !payload.eventDate) {
-      return reply.code(400).send({ success: false, error: 'Customer name and event date are required' });
+    if (!payload.customerName || !payload.eventDate || !payload.hallId) {
+      return reply.code(400).send({ success: false, error: 'Customer name, event date, and hall are required' });
     }
-    const created = store.createBanquetBooking(payload);
-    return reply.code(201).send({ success: true, booking: created });
+    try {
+      const created = store.createBanquetBooking(payload);
+      return reply.code(201).send({ success: true, booking: created });
+    } catch (err) {
+      return reply.code(409).send({ success: false, error: err.message });
+    }
   });
 
   fastify.put('/bookings/:id', async (request, reply) => {
@@ -86,6 +100,11 @@ export default async function banquetRoutes(fastify) {
 
   fastify.delete('/bookings/:id', async (request, reply) => {
     const { id } = request.params;
+    const permanent = request.query?.permanent === 'true' || request.query?.permanent === true;
+    if (permanent) {
+      const ok = store.deleteBanquetBooking(id);
+      return reply.send({ success: ok, message: ok ? 'Booking deleted permanently' : 'Booking not found' });
+    }
     const reason = request.query?.reason || 'Cancelled by admin';
     const cancelled = store.cancelBanquetBooking(id, reason);
     if (!cancelled) {

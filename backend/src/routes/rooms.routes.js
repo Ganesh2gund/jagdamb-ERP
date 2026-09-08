@@ -2,8 +2,14 @@ import { store } from '../store/index.js';
 
 export default async function roomRoutes(fastify, options) {
   fastify.get('/', async (request, reply) => {
-    const { status } = request.query || {};
+    const { status, checkIn, checkOut } = request.query || {};
     let rooms = store.getRooms();
+
+    // If checkIn and checkOut dates are provided, filter rooms by date-range availability
+    if (checkIn && checkOut) {
+      rooms = store.getAvailableRoomsForDates(checkIn, checkOut);
+    }
+
     if (status) {
       rooms = rooms.filter(r => r.status.toLowerCase() === status.toLowerCase());
     }
@@ -27,6 +33,14 @@ export default async function roomRoutes(fastify, options) {
     return { success: true, data: updated };
   });
 
+  fastify.post('/:id/clean', async (request, reply) => {
+    const updated = store.markRoomCleaned(request.params.id);
+    if (!updated) {
+      return reply.code(404).send({ success: false, message: 'Room not found' });
+    }
+    return { success: true, data: updated, message: 'Room marked as cleaned and available' };
+  });
+
   fastify.post('/:id/checkin', async (request, reply) => {
     const { guestId, guestName, bookingId, checkInDate, checkOutDate } = request.body || {};
     const updated = store.checkInRoom(
@@ -48,7 +62,7 @@ export default async function roomRoutes(fastify, options) {
     if (!updated) {
       return reply.code(404).send({ success: false, message: 'Room not found' });
     }
-    return { success: true, data: updated };
+    return { success: true, data: updated, message: 'Guest checked out. Room moved to cleaning.' };
   });
 
   // ──────────────────────────────────────

@@ -3,6 +3,7 @@ import '../../../core/theme/app_theme.dart';
 import '../../../core/utils/formatters.dart';
 import '../../../models/banquet.dart';
 import '../../../repositories/banquet_repository.dart';
+import '../../../services/api_client.dart';
 import '../../../widgets/common_widgets.dart';
 
 class NewBanquetBookingScreen extends StatefulWidget {
@@ -65,6 +66,54 @@ class _NewBanquetBookingScreenState extends State<NewBanquetBookingScreen> {
     super.dispose();
   }
 
+  Map<String, bool> _slotAvailability = {'Morning': true, 'Evening': true, 'Full Day': true};
+  bool _isCheckingSlots = false;
+
+  String _formatDateStr(DateTime dt) {
+    return '${dt.year.toString().padLeft(4, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _checkSlotAvailability() async {
+    if (_selectedHall == null) return;
+    final dateStr = _formatDateStr(_eventDate);
+    setState(() => _isCheckingSlots = true);
+    try {
+      final res = await _repository.getSlotAvailability(_selectedHall!.id, dateStr);
+      final slots = res['slots'] as Map<String, dynamic>?;
+      final morningAvail = res['morning'] is bool
+          ? (res['morning'] as bool)
+          : ((slots?['morning']?['available'] as bool?) ?? true);
+      final eveningAvail = res['evening'] is bool
+          ? (res['evening'] as bool)
+          : ((slots?['evening']?['available'] as bool?) ?? true);
+      final fullDayAvail = res['fullDay'] is bool
+          ? (res['fullDay'] as bool)
+          : ((slots?['fullDay']?['available'] as bool?) ?? true);
+
+      if (mounted) {
+        setState(() {
+          _slotAvailability = {
+            'Morning': morningAvail,
+            'Evening': eveningAvail,
+            'Full Day': fullDayAvail,
+          };
+          if (_slotAvailability[_slot] == false) {
+            if (morningAvail) {
+              _slot = 'Morning';
+            } else if (eveningAvail) {
+              _slot = 'Evening';
+            } else if (fullDayAvail) {
+              _slot = 'Full Day';
+            }
+          }
+          _isCheckingSlots = false;
+        });
+      }
+      return;
+    } catch (_) {}
+    if (mounted) setState(() => _isCheckingSlots = false);
+  }
+
   Future<void> _loadMasterData() async {
     try {
       final results = await Future.wait([
@@ -83,6 +132,7 @@ class _NewBanquetBookingScreenState extends State<NewBanquetBookingScreen> {
         }
         _isLoading = false;
       });
+      await _checkSlotAvailability();
     } catch (_) {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -112,6 +162,17 @@ class _NewBanquetBookingScreenState extends State<NewBanquetBookingScreen> {
       return;
     }
 
+    if (_slotAvailability[_slot] == false) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('⚠️ यह स्लॉट ($_slot) इस तारीख के लिए पहले से बुक है! कृपया दूसरा स्लॉट चुनें।'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
     setState(() => _isSubmitting = true);
 
     final payload = {
@@ -120,7 +181,7 @@ class _NewBanquetBookingScreenState extends State<NewBanquetBookingScreen> {
       'customerName': _nameCtrl.text.trim(),
       'customerPhone': _phoneCtrl.text.trim(),
       'eventType': _eventType,
-      'eventDate': '${_eventDate.year}-${_eventDate.month.toString().padLeft(2, '0')}-${_eventDate.day.toString().padLeft(2, '0')}',
+      'eventDate': _formatDateStr(_eventDate),
       'slot': _slot,
       'expectedGuests': _expectedGuests,
       'packageId': _selectedPackage?.id ?? '',
@@ -137,23 +198,36 @@ class _NewBanquetBookingScreenState extends State<NewBanquetBookingScreen> {
       'notes': _notesCtrl.text.trim(),
     };
 
-    final created = await _repository.createBooking(payload);
-    if (!mounted) return;
-    setState(() => _isSubmitting = false);
+    try {
+      final created = await _repository.createBooking(payload);
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
 
-    if (created != null) {
+      if (created != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Booking ${created.bookingNumber} created successfully!'),
+            backgroundColor: AppColors.success,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        Navigator.pop(context, true);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to create booking. Please try again.'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      final msg = e is ApiException ? e.message : 'Failed to create booking: $e';
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Booking ${created.bookingNumber} created successfully!'),
-          backgroundColor: AppColors.success,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      Navigator.pop(context, true);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to create booking. Please try again.'),
+          content: Text(msg),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
         ),
@@ -246,7 +320,10 @@ class _NewBanquetBookingScreenState extends State<NewBanquetBookingScreen> {
                       );
                     }).toList(),
                     onChanged: (val) {
-                      if (val != null) setState(() => _selectedHall = val);
+                      if (val != null) {
+                        setState(() => _selectedHall = val);
+                        _checkSlotAvailability();
+                      }
                     },
                     validator: (v) => v == null ? 'Please select a hall' : null,
                   ),
@@ -284,7 +361,10 @@ class _NewBanquetBookingScreenState extends State<NewBanquetBookingScreen> {
                               firstDate: DateTime.now(),
                               lastDate: DateTime.now().add(const Duration(days: 365)),
                             );
-                            if (picked != null) setState(() => _eventDate = picked);
+                            if (picked != null) {
+                              setState(() => _eventDate = picked);
+                              _checkSlotAvailability();
+                            }
                           },
                           icon: const Icon(Icons.calendar_month, size: 18),
                           label: Text(
@@ -300,7 +380,19 @@ class _NewBanquetBookingScreenState extends State<NewBanquetBookingScreen> {
                     ],
                   ),
                   const SizedBox(height: 14),
-                  const Text('Slot Selection (समय स्लॉट):', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                  Row(
+                    children: [
+                      const Text('Slot Selection (समय स्लॉट):', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                      if (_isCheckingSlots) ...[
+                        const SizedBox(width: 8),
+                        const SizedBox(
+                          width: 12,
+                          height: 12,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                        ),
+                      ],
+                    ],
+                  ),
                   const SizedBox(height: 8),
                   Row(
                     children: [
@@ -530,26 +622,46 @@ class _NewBanquetBookingScreenState extends State<NewBanquetBookingScreen> {
 
   Widget _slotChip(String slotKey, String label) {
     final isSelected = _slot == slotKey;
+    final isAvailable = _slotAvailability[slotKey] ?? true;
+
     return Expanded(
       child: GestureDetector(
-        onTap: () => setState(() => _slot = slotKey),
+        onTap: isAvailable ? () => setState(() => _slot = slotKey) : null,
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 10),
+          padding: const EdgeInsets.symmetric(vertical: 8),
           decoration: BoxDecoration(
-            color: isSelected ? AppColors.primary : AppColors.surfaceVariant.withValues(alpha: 0.4),
+            color: !isAvailable
+                ? AppColors.grey100
+                : (isSelected ? AppColors.primary : AppColors.surfaceVariant.withValues(alpha: 0.4)),
             borderRadius: BorderRadius.circular(10),
             border: Border.all(
-              color: isSelected ? AppColors.primary : AppColors.border,
+              color: !isAvailable
+                  ? AppColors.border
+                  : (isSelected ? AppColors.primary : AppColors.border),
             ),
           ),
           alignment: Alignment.center,
-          child: Text(
-            slotKey,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-              color: isSelected ? Colors.white : AppColors.textPrimary,
-            ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                slotKey,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+                  color: !isAvailable
+                      ? AppColors.textSecondary
+                      : (isSelected ? Colors.white : AppColors.textPrimary),
+                ),
+              ),
+              if (!isAvailable) ...[
+                const SizedBox(height: 2),
+                const Text(
+                  'बुक है (Booked)',
+                  style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: AppColors.error),
+                ),
+              ],
+            ],
           ),
         ),
       ),

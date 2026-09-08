@@ -9,6 +9,7 @@ import '../../../models/room.dart';
 import '../../../models/guest.dart';
 import '../../../repositories/booking_repository.dart';
 import '../../../repositories/room_repository.dart';
+import '../../../services/api_client.dart';
 
 class NewBookingScreen extends StatefulWidget {
   final String? preselectedRoomId;
@@ -61,23 +62,82 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
     super.dispose();
   }
 
-  Future<void> _loadData() async {
+  String _fmtDate(DateTime dt) {
+    return '${dt.year.toString().padLeft(4, '0')}-${dt.month.toString().padLeft(2, '0')}-${dt.day.toString().padLeft(2, '0')}';
+  }
+
+  RoomType _parseRoomType(String? t) {
+    switch (t?.toLowerCase()) {
+      case 'deluxe': return RoomType.deluxe;
+      case 'suite': return RoomType.suite;
+      case 'executive': return RoomType.executive;
+      case 'presidential': return RoomType.presidential;
+      default: return RoomType.standard;
+    }
+  }
+
+  Future<void> _fetchAvailableRoomsForDates() async {
+    final effectiveCheckIn = _checkInNow ? DateTime.now() : _checkIn;
+    final inStr = _fmtDate(effectiveCheckIn);
+    final outStr = _fmtDate(_checkOut);
+    try {
+      final res = await ApiClient.instance.get('/rooms?checkIn=$inStr&checkOut=$outStr');
+      if (res is Map && res['data'] is List) {
+        final List<Room> loaded = (res['data'] as List).map((m) {
+          return Room(
+            id: m['id']?.toString() ?? '',
+            number: m['number']?.toString() ?? '',
+            floor: (m['floor'] as num?)?.toInt() ?? 1,
+            type: _parseRoomType(m['type']?.toString()),
+            pricePerNight: (m['pricePerNight'] as num?)?.toDouble() ?? 0.0,
+            status: RoomStatus.available,
+            amenities: (m['amenities'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+            maxGuests: (m['maxGuests'] as num?)?.toInt() ?? 2,
+          );
+        }).toList();
+
+        if (mounted) {
+          setState(() {
+            _availableRooms = loaded;
+            if (_selectedRoom != null && !_availableRooms.any((r) => r.id == _selectedRoom!.id)) {
+              _selectedRoom = null;
+            }
+          });
+        }
+        return;
+      }
+    } catch (_) {}
+
+    if (!mounted) return;
     final roomRepo = context.read<RoomRepository>();
     final rooms = await roomRepo.getRooms();
     if (!mounted) return;
-    final available = rooms.where((r) => r.status == RoomStatus.available).toList();
+    setState(() {
+      _availableRooms = rooms.where((r) => r.status == RoomStatus.available).toList();
+      if (_selectedRoom != null && !_availableRooms.any((r) => r.id == _selectedRoom!.id)) {
+        _selectedRoom = null;
+      }
+    });
+  }
+
+  Future<void> _loadData() async {
+    await _fetchAvailableRoomsForDates();
+    if (!mounted) return;
+
     Room? matchedRoom;
     if (widget.preselectedRoomId != null) {
-      final matches = available.where((r) => r.id == widget.preselectedRoomId || r.number == widget.preselectedRoomId);
+      final matches = _availableRooms.where((r) => r.id == widget.preselectedRoomId || r.number == widget.preselectedRoomId);
       if (matches.isNotEmpty) {
         matchedRoom = matches.first;
       }
     }
     setState(() {
-      _availableRooms = available;
       _selectedRoom = matchedRoom;
       if (matchedRoom != null) {
-        _advanceAmountController.text = matchedRoom.pricePerNight.toStringAsFixed(0);
+        // Auto-fill advance = full total (nights × price)
+        final nights = _checkOut.difference(_checkIn).inDays;
+        final total = matchedRoom.pricePerNight * (nights <= 0 ? 1 : nights);
+        _advanceAmountController.text = total.toStringAsFixed(0);
         _paymentStatus = PaymentStatus.paid;
       }
       _dataLoading = false;
@@ -110,7 +170,23 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
         } else {
           _checkOut = picked;
         }
+        // Auto-recalculate total & update advance if room is selected
+        _recalculateAdvanceAfterDateChange();
       });
+      await _fetchAvailableRoomsForDates();
+    }
+  }
+
+  /// After dates change, recalculate advance amount to reflect new total
+  void _recalculateAdvanceAfterDateChange() {
+    if (_selectedRoom == null) return;
+    final nights = _checkOut.difference(_checkIn).inDays;
+    final newTotal = _selectedRoom!.pricePerNight * (nights <= 0 ? 1 : nights);
+    final currentAdv = double.tryParse(_advanceAmountController.text.trim()) ?? 0;
+    // Auto-update if user is in "full paid" mode or advance is 0
+    // Don't override a partial amount user manually typed
+    if (_paymentStatus == PaymentStatus.paid || currentAdv == 0) {
+      _advanceAmountController.text = newTotal.toStringAsFixed(0);
     }
   }
 
@@ -152,37 +228,50 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
       specialRequest: _specialRequestController.text.trim().isEmpty ? null : _specialRequestController.text.trim(),
     );
 
-    await bookingRepo.createBooking(booking, checkInNow: _checkInNow);
+    try {
+      await bookingRepo.createBooking(booking, checkInNow: _checkInNow);
 
-    // If auto check-in, also update room in the repository
-    if (_checkInNow) {
-      await roomRepo.checkIn(
-        _selectedRoom!.id,
-        booking.guestId,
-        booking.guestName,
-        booking.id,
-        effectiveCheckIn,
-        _checkOut,
-      );
-    }
+      // If auto check-in, also update room in the repository
+      if (_checkInNow) {
+        await roomRepo.checkIn(
+          _selectedRoom!.id,
+          booking.guestId,
+          booking.guestName,
+          booking.id,
+          effectiveCheckIn,
+          _checkOut,
+        );
+      }
 
-    if (!mounted) return;
-    setState(() => _isLoading = false);
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          _checkInNow
-              ? '✅ Guest Checked-In to Room ${_selectedRoom!.number} — Room is now Occupied!'
-              : 'Booking created successfully!',
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _checkInNow
+                ? '✅ Guest Checked-In to Room ${_selectedRoom!.number} — Room is now Occupied!'
+                : 'Booking created successfully!',
+          ),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: _checkInNow ? AppColors.available : null,
         ),
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: _checkInNow ? AppColors.available : null,
-      ),
-    );
-    if (_checkInNow) {
-      context.go('/rooms');
-    } else {
-      context.go('/bookings');
+      );
+      if (_checkInNow) {
+        context.go('/rooms');
+      } else {
+        context.go('/bookings');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+      final msg = e is ApiException ? e.message : 'Booking creation failed: $e';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(msg),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     }
   }
 
@@ -229,6 +318,7 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
                           _checkInNow = true;
                           _checkIn = DateTime.now();
                         });
+                        _fetchAvailableRoomsForDates();
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 10),
@@ -264,6 +354,7 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
                         setState(() {
                           _checkInNow = false;
                         });
+                        _fetchAvailableRoomsForDates();
                       },
                       child: Container(
                         padding: const EdgeInsets.symmetric(vertical: 10),
@@ -338,23 +429,33 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
             // Room section
             _SectionCard(
               title: 'Room Selection',
-              child: DropdownButtonFormField<Room?>(
+              child: DropdownButtonFormField<String?>(
                 isExpanded: true,
                 decoration: const InputDecoration(labelText: 'Select Room *'),
-                value: _selectedRoom,
-                items: _availableRooms.map((r) => DropdownMenuItem<Room?>(
-                  value: r,
+                value: (_selectedRoom != null && _availableRooms.any((r) => r.id == _selectedRoom!.id))
+                    ? _selectedRoom!.id
+                    : null,
+                items: _availableRooms.map((r) => DropdownMenuItem<String?>(
+                  value: r.id,
                   child: Text(
-                    'Room ${r.number} - ${r.type.label} (₹${r.pricePerNight.toStringAsFixed(0)}/night)',
+                    'Room ${r.number} - ${r.type.label} (₹${r.pricePerNight.toStringAsFixed(0)}/day)',
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
                   ),
                 )).toList(),
-                onChanged: (r) {
+                onChanged: (roomId) {
                   setState(() {
-                    _selectedRoom = r;
-                    if (r != null) {
-                      _advanceAmountController.text = r.pricePerNight.toStringAsFixed(0);
+                    try {
+                      _selectedRoom = _availableRooms.firstWhere((r) => r.id == roomId);
+                    } catch (_) {
+                      _selectedRoom = null;
+                    }
+                    if (_selectedRoom != null) {
+                      // Auto-set advance = full total (nights × price per night)
+                      final nights = _checkOut.difference(_checkIn).inDays;
+                      final total = _selectedRoom!.pricePerNight * (nights <= 0 ? 1 : nights);
+                      _advanceAmountController.text = total.toStringAsFixed(0);
+                      _paymentStatus = PaymentStatus.paid;
                     }
                   });
                 },
@@ -403,7 +504,7 @@ class _NewBookingScreenState extends State<NewBookingScreen> {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Text('${_checkOut.difference(_checkIn).inDays} Night(s)', style: const TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500)),
+                          Text('${_checkOut.difference(_checkIn).inDays} Day(s)', style: const TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.w500)),
                           Text(AppFormatters.formatCurrency(_totalAmount), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.primary, fontFamily: 'Inter')),
                         ],
                       ),

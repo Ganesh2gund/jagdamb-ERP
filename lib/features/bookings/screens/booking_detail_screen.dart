@@ -53,6 +53,200 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     }
   }
 
+  Future<void> _showExtendStaySheet(Booking b) async {
+    int additionalNights = 1;
+    bool isExtending = false;
+
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setSheetState) {
+          final currentNights = b.checkOut.difference(b.checkIn).inDays.clamp(1, 999);
+          final pricePerNight = b.totalAmount / currentNights;
+          final newCheckOut = b.checkOut.add(Duration(days: additionalNights));
+          final extraCost = pricePerNight * additionalNights;
+
+          return Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+            ),
+            padding: EdgeInsets.fromLTRB(
+              20, 14, 20,
+              MediaQuery.of(context).viewInsets.bottom + 24,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 4,
+                    decoration: BoxDecoration(color: AppColors.grey300, borderRadius: BorderRadius.circular(2)),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.more_time_rounded, color: AppColors.primary, size: 24),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('स्टे आगे बढ़ाएं (Extend Stay)', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800, fontFamily: 'Inter')),
+                          SizedBox(height: 2),
+                          Text('गेस्ट के रुकने की तारीख और किराया बढ़ाएं', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: AppColors.textSecondary),
+                      onPressed: () => Navigator.pop(ctx),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                const Divider(height: 1),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.grey50,
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('कमरा संख्या (Room):', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                          Text('Room ${b.roomNumber} (${b.roomType})', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('वर्तमान चेक-आउट (Current):', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                          Text(AppFormatters.formatDate(b.checkOut), style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('नया चेक-आउट (New Checkout):', style: TextStyle(fontSize: 13, color: AppColors.primary, fontWeight: FontWeight.w600)),
+                          Text(
+                            AppFormatters.formatDate(newCheckOut),
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800, color: AppColors.primary),
+                          ),
+                        ],
+                      ),
+                      const Divider(height: 20),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text('अतिरिक्त किराया (+Cost):', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                          Text('₹${extraCost.toStringAsFixed(0)}', style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: AppColors.success)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+                const Text('कितने दिन बढ़ाना है? (Select Additional Days)', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                const SizedBox(height: 10),
+                Row(
+                  children: [1, 2, 3, 5].map((nights) {
+                    final selected = additionalNights == nights;
+                    return Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            backgroundColor: selected ? AppColors.primary : Colors.white,
+                            foregroundColor: selected ? Colors.white : AppColors.textPrimary,
+                            side: BorderSide(color: selected ? AppColors.primary : AppColors.border),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          onPressed: () {
+                            setSheetState(() => additionalNights = nights);
+                          },
+                          child: Text('+$nights Day', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+                const SizedBox(height: 22),
+                SizedBox(
+                  width: double.infinity,
+                  height: 48,
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      elevation: 0,
+                    ),
+                    onPressed: isExtending
+                        ? null
+                        : () async {
+                            setSheetState(() => isExtending = true);
+                            final messenger = ScaffoldMessenger.of(context);
+                            final nav = Navigator.of(ctx);
+                            final repo = context.read<BookingRepository>();
+                            final res = await repo.extendStay(b.id, additionalNights);
+                            nav.pop();
+                            if (res['success'] == true) {
+                              messenger.showSnackBar(
+                                SnackBar(
+                                  content: Text('✅ स्टे सफलतापूर्वक बढ़ गया (+ $additionalNights दिन)! नया चेकआउट: ${AppFormatters.formatDate(newCheckOut)}'),
+                                  backgroundColor: AppColors.success,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                              if (mounted) _loadBooking();
+                            } else {
+                              messenger.showSnackBar(
+                                SnackBar(
+                                  content: Text(res['message']?.toString() ?? 'Failed to extend stay'),
+                                  backgroundColor: AppColors.error,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          },
+                    child: isExtending
+                        ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                        : Text(
+                            'तारीख आगे बढ़ाएं (+₹${extraCost.toStringAsFixed(0)})',
+                            style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                          ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Future<void> _confirmCancelBooking() async {
     final reasonController = TextEditingController();
     final confirmed = await showModalBottomSheet<bool>(
@@ -455,7 +649,7 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
                 InfoRow(label: 'Room', value: 'Room ${b.roomNumber} (${b.roomType})'),
                 InfoRow(label: 'Check-in', value: AppFormatters.formatDate(b.checkIn)),
                 InfoRow(label: 'Check-out', value: AppFormatters.formatDate(b.checkOut)),
-                InfoRow(label: 'Duration', value: '${b.nights} Night(s)'),
+                InfoRow(label: 'Duration', value: '${b.nights} Day(s)'),
                 InfoRow(label: 'Source', value: b.source.label),
                 if (b.specialRequest != null && b.specialRequest!.isNotEmpty)
                   InfoRow(label: 'Request', value: b.specialRequest!, valueColor: AppColors.warning),
@@ -572,6 +766,24 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
             ],
 
             if (b.status == BookingStatus.checkedIn) ...[
+              SizedBox(
+                width: double.infinity,
+                height: 48,
+                child: ElevatedButton.icon(
+                  onPressed: () => _showExtendStaySheet(b),
+                  icon: const Icon(Icons.more_time_rounded, size: 20),
+                  label: const Text(
+                    '🛌 Extend Stay (+1 Day / तारीख बढ़ाएं)',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
               SizedBox(
                 width: double.infinity,
                 height: 52,

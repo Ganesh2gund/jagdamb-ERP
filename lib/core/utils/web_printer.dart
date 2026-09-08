@@ -340,7 +340,7 @@ class WebPrinter {
       <div class="details-box">
         <div class="details-title">Stay Details</div>
         <p class="details-text">Room $roomNumber ($roomType)</p>
-        <p class="details-sub">$checkIn - $checkOut ($nights Night(s))</p>
+        <p class="details-sub">$checkIn - $checkOut ($nights Day(s))</p>
       </div>
     </div>
 
@@ -348,13 +348,13 @@ class WebPrinter {
       <thead>
         <tr>
           <th>Item / Service</th>
-          <th style="text-align: center;">Nights</th>
+          <th style="text-align: center;">Days</th>
           <th style="text-align: right;">Amount</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <td><strong>Room $roomNumber ($roomType) Stay</strong><br><span style="font-size: 11px; color: #64748b;">$nights night(s) stay charges</span></td>
+          <td><strong>Room $roomNumber ($roomType) Stay</strong><br><span style="font-size: 11px; color: #64748b;">$nights day(s) stay charges</span></td>
           <td style="text-align: center;">$nights</td>
           <td style="text-align: right;"><strong>₹${roomCharge.toStringAsFixed(2)}</strong></td>
         </tr>

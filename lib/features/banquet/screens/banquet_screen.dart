@@ -135,7 +135,7 @@ class _BanquetScreenState extends State<BanquetScreen> with SingleTickerProvider
   // ══════════════════════════════════════════════════════════════════
   Widget _buildBookingsTab() {
     final filtered = _bookings.where((b) {
-      if (_bookingFilter == 'all') return true;
+      if (_bookingFilter == 'all') return b.status.toLowerCase() != 'cancelled';
       return b.status.toLowerCase() == _bookingFilter.toLowerCase();
     }).toList();
 
@@ -197,7 +197,7 @@ class _BanquetScreenState extends State<BanquetScreen> with SingleTickerProvider
             scrollDirection: Axis.horizontal,
             child: Row(
               children: [
-                _filterChip('All (${_bookings.length})', 'all'),
+                _filterChip('All (${_bookings.where((b) => b.status.toLowerCase() != 'cancelled').length})', 'all'),
                 const SizedBox(width: 8),
                 _filterChip('Confirmed', 'confirmed'),
                 const SizedBox(width: 8),

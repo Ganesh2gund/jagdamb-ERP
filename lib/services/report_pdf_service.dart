@@ -41,7 +41,7 @@ class ReportPdfService {
       final outStr = DateFormat('dd MMM yyyy').format(outDt);
       final nights = outDt.difference(inDt).inDays;
       if (nights > 0) {
-        return '$inStr to $outStr ($nights ${nights == 1 ? 'Night' : 'Nights'})';
+        return '$inStr to $outStr ($nights ${nights == 1 ? 'Day' : 'Days'})';
       }
       return '$inStr to $outStr';
     } catch (_) {

@@ -398,7 +398,7 @@ class _RoomAvailabilityScreenState extends State<RoomAvailabilityScreen> {
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
                                   Text(
-                                    '${AppFormatters.formatCurrency(room.pricePerNight)} / night',
+                                    '${AppFormatters.formatCurrency(room.pricePerNight)} / day',
                                     style: const TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.w700,

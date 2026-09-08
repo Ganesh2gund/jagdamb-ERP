@@ -202,7 +202,7 @@ class _CheckInScreenState extends State<CheckInScreen> {
             InfoRow(label: 'Room', value: 'Room ${b.roomNumber} (${b.roomType})'),
             InfoRow(label: 'Check-in', value: AppFormatters.formatDate(b.checkIn)),
             InfoRow(label: 'Check-out', value: AppFormatters.formatDate(b.checkOut)),
-            InfoRow(label: 'Nights', value: '${b.nights}'),
+            InfoRow(label: 'Days', value: '${b.nights}'),
             InfoRow(label: 'Total', value: AppFormatters.formatCurrency(b.totalAmount)),
             InfoRow(label: 'Payment', value: b.paymentStatus.label, valueColor: b.paymentStatus == PaymentStatus.paid ? AppColors.success : AppColors.error),
           ]),
