@@ -12,6 +12,7 @@ class MoreScreen extends StatelessWidget {
       _MoreItem(icon: Icons.restaurant_outlined, label: 'Restaurant', route: '/restaurant', color: AppColors.cleaning),
       _MoreItem(icon: Icons.local_cafe_outlined, label: 'Cafe', route: '/cafe', color: Color(0xFFD97706)),
       _MoreItem(icon: Icons.celebration_outlined, label: 'Banquet Hall', route: '/banquet', color: Color(0xFF7C3AED)),
+      _MoreItem(icon: Icons.account_balance_wallet_outlined, label: 'Credit / Khata', route: '/credit', color: Color(0xFFE11D48)),
       _MoreItem(icon: Icons.receipt_long_outlined, label: 'Expenses', route: '/expenses', color: AppColors.warning),
       _MoreItem(icon: Icons.settings_outlined, label: 'Settings', route: '/settings', color: AppColors.textSecondary),
     ];
@@ -50,7 +51,7 @@ class MoreScreen extends StatelessWidget {
                         width: 48,
                         height: 48,
                         decoration: BoxDecoration(
-                          color: item.color.withOpacity(0.12),
+                          color: item.color.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(14),
                         ),
                         child: Icon(item.icon, color: item.color, size: 24),

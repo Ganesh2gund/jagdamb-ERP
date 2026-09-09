@@ -267,12 +267,17 @@ export default async function reportRoutes(fastify) {
     const cafeOrders = store.getCafeOrders ? store.getCafeOrders() : [];
     const banquetBookings = store.getBanquetBookings ? store.getBanquetBookings() : [];
     const expenses = store.getExpenses();
+    const credits = store.getCreditKhatas ? store.getCreditKhatas() : [];
+
+    const creditRevenue = credits.reduce((sum, c) => sum + (Number(c.paidAmount) || 0), 0);
+    const creditOutstanding = credits.reduce((sum, c) => sum + (Number(c.balanceAmount) || 0), 0);
+    const creditGiven = credits.reduce((sum, c) => sum + (Number(c.totalAmount) || 0), 0);
 
     const roomRevenue = bookings.reduce((sum, b) => sum + (Number(b.paidAmount) || Number(b.advancePaid) || 0), 0);
     const restaurantRevenue = orders.filter(o => o.isPaid).reduce((sum, o) => sum + (Number(o.total) || 0), 0);
     const cafeRevenue = cafeOrders.filter(o => o.isPaid).reduce((sum, o) => sum + (Number(o.total) || 0), 0);
     const banquetRevenue = banquetBookings.reduce((sum, b) => sum + (Number(b.advancePaid) || 0) + (Number(b.paidAmount) || 0), 0);
-    const totalRevenue = roomRevenue + restaurantRevenue + cafeRevenue + banquetRevenue;
+    const totalRevenue = roomRevenue + restaurantRevenue + cafeRevenue + banquetRevenue + creditRevenue;
     const totalExpenses = expenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
     const netProfit = totalRevenue - totalExpenses;
 
@@ -296,6 +301,9 @@ export default async function reportRoutes(fastify) {
           restaurantRevenue,
           cafeRevenue,
           banquetRevenue,
+          creditRevenue,
+          creditOutstanding,
+          creditGiven,
           totalRevenue,
           totalExpenses,
           netProfit,
@@ -304,6 +312,7 @@ export default async function reportRoutes(fastify) {
           totalCafeOrdersCount: cafeOrders.length,
           totalBanquetBookingsCount: banquetBookings.length,
           totalExpensesCount: expenses.length,
+          totalCreditsCount: credits.length,
         },
       },
     });
@@ -381,11 +390,28 @@ export default async function reportRoutes(fastify) {
       status: b.status || 'confirmed',
     }));
 
+    const credits = (store.getCreditKhatas ? store.getCreditKhatas() : []).map(c => ({
+      id: c.id,
+      billNumber: c.billNumber,
+      customerName: c.customerName,
+      customerPhone: c.customerPhone,
+      description: c.description || 'Food & Dining Credit',
+      totalAmount: Number(c.totalAmount) || 0,
+      paidAmount: Number(c.paidAmount) || 0,
+      balanceAmount: Number(c.balanceAmount) || 0,
+      status: c.status || 'pending',
+      createdAt: c.createdAt || '',
+    }));
+
+    const creditRevenue = credits.reduce((sum, c) => sum + c.paidAmount, 0);
+    const creditOutstanding = credits.reduce((sum, c) => sum + c.balanceAmount, 0);
+    const creditGiven = credits.reduce((sum, c) => sum + c.totalAmount, 0);
+
     const roomRevenue = bookings.reduce((sum, b) => sum + b.paidAmount, 0);
     const restaurantRevenue = orders.filter(o => o.isPaid).reduce((sum, o) => sum + o.total, 0);
     const cafeRevenue = cafeOrders.filter(o => o.isPaid).reduce((sum, o) => sum + o.total, 0);
     const banquetRevenue = banquetBookings.reduce((sum, b) => sum + (Number(b.advancePaid) || 0) + (Number(b.paidAmount) || 0), 0);
-    const totalRevenue = roomRevenue + restaurantRevenue + cafeRevenue + banquetRevenue;
+    const totalRevenue = roomRevenue + restaurantRevenue + cafeRevenue + banquetRevenue + creditRevenue;
     const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
     const netProfit = totalRevenue - totalExpenses;
 
@@ -408,6 +434,9 @@ export default async function reportRoutes(fastify) {
           restaurantRevenue,
           cafeRevenue,
           banquetRevenue,
+          creditRevenue,
+          creditOutstanding,
+          creditGiven,
           totalRevenue,
           totalExpenses,
           netProfit,
@@ -416,12 +445,14 @@ export default async function reportRoutes(fastify) {
           cafeOrdersCount: cafeOrders.length,
           banquetBookingsCount: banquetBookings.length,
           expensesCount: expenses.length,
+          creditsCount: credits.length,
         },
         bookings,
         orders,
         cafeOrders,
         banquetBookings,
         expenses,
+        credits,
       },
     });
   });

@@ -235,6 +235,8 @@ class _ReportCycleScreenState extends State<ReportCycleScreen> {
     final restRev = (summary['restaurantRevenue'] as num?)?.toDouble() ?? 0.0;
     final cafeRev = (summary['cafeRevenue'] as num?)?.toDouble() ?? 0.0;
     final banquetRev = (summary['banquetRevenue'] as num?)?.toDouble() ?? 0.0;
+    final creditRev = (summary['creditRevenue'] as num?)?.toDouble() ?? 0.0;
+    final creditDue = (summary['creditOutstanding'] as num?)?.toDouble() ?? 0.0;
     final totalExp = (summary['totalExpenses'] as num?)?.toDouble() ?? 0.0;
     final netProfit = (summary['netProfit'] as num?)?.toDouble() ?? 0.0;
 
@@ -243,6 +245,7 @@ class _ReportCycleScreenState extends State<ReportCycleScreen> {
     final cafeOrdersCount = summary['totalCafeOrdersCount'] ?? 0;
     final banquetBookingsCount = summary['totalBanquetBookingsCount'] ?? 0;
     final expensesCount = summary['totalExpensesCount'] ?? 0;
+    final creditsCount = summary['totalCreditsCount'] ?? 0;
 
     final progress = (daysElapsed / 10).clamp(0.0, 1.0);
 
@@ -449,6 +452,14 @@ class _ReportCycleScreenState extends State<ReportCycleScreen> {
               const SizedBox(height: 10),
               Row(
                 children: [
+                  _statCard('Credit Recovered', '₹${creditRev.toStringAsFixed(0)}', '$creditsCount Accounts', Colors.teal.shade700),
+                  const SizedBox(width: 10),
+                  _statCard('Credit Due (Baaki)', '₹${creditDue.toStringAsFixed(0)}', 'Outstanding', Colors.red.shade700),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Row(
+                children: [
                   _statCard('Expenses', '₹${totalExp.toStringAsFixed(0)}', '$expensesCount Expenses', AppColors.warning),
                   const SizedBox(width: 10),
                   _statCard(
@@ -484,7 +495,8 @@ class _ReportCycleScreenState extends State<ReportCycleScreen> {
               const SizedBox(height: 8),
               const Center(
                 child: Text(
-                  '💡 Note: PDF download karne ke 6 ghante baad billing data refresh hoga.',
+                  '💡 Note: PDF download karne ke 6 ghante baad billing data refresh hoga. Unsettled Udhaar/Khata records safe rahenge.',
+                  textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
                 ),
               ),

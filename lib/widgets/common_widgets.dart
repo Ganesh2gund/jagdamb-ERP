@@ -1,5 +1,322 @@
 import 'package:flutter/material.dart';
+import 'package:shimmer/shimmer.dart';
 import '../core/theme/app_theme.dart';
+import '../core/utils/formatters.dart';
+
+/// Smooth bounce animation on tap for luxury tactile feedback
+class AppBounceable extends StatefulWidget {
+  final Widget child;
+  final VoidCallback? onTap;
+  final double scaleFactor;
+  final Duration duration;
+
+  const AppBounceable({
+    super.key,
+    required this.child,
+    this.onTap,
+    this.scaleFactor = 0.96,
+    this.duration = const Duration(milliseconds: 110),
+  });
+
+  @override
+  State<AppBounceable> createState() => _AppBounceableState();
+}
+
+class _AppBounceableState extends State<AppBounceable> {
+  bool _isPressed = false;
+
+  void _onTapDown(TapDownDetails details) {
+    if (widget.onTap == null) return;
+    setState(() => _isPressed = true);
+  }
+
+  void _onTapUp(TapUpDetails details) {
+    if (widget.onTap == null) return;
+    setState(() => _isPressed = false);
+  }
+
+  void _onTapCancel() {
+    if (widget.onTap == null) return;
+    setState(() => _isPressed = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.onTap == null) return widget.child;
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTapDown: _onTapDown,
+      onTapUp: _onTapUp,
+      onTapCancel: _onTapCancel,
+      onTap: widget.onTap,
+      child: AnimatedScale(
+        scale: _isPressed ? widget.scaleFactor : 1.0,
+        duration: widget.duration,
+        curve: Curves.easeOutCubic,
+        child: widget.child,
+      ),
+    );
+  }
+}
+
+/// Smooth roll-up counter animation for currency/numbers
+class AnimatedAmountText extends StatelessWidget {
+  final double amount;
+  final TextStyle? style;
+  final Duration duration;
+
+  const AnimatedAmountText({
+    super.key,
+    required this.amount,
+    this.style,
+    this.duration = const Duration(milliseconds: 800),
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      tween: Tween<double>(begin: 0, end: amount),
+      duration: duration,
+      curve: Curves.easeOutQuart,
+      builder: (context, val, _) {
+        return Text(
+          AppFormatters.formatCurrency(val),
+          style: style,
+        );
+      },
+    );
+  }
+}
+
+/// Breathing pulse glow badge for live status
+class PulseBadge extends StatefulWidget {
+  final String label;
+  final Color color;
+  final Color backgroundColor;
+
+  const PulseBadge({
+    super.key,
+    required this.label,
+    required this.color,
+    required this.backgroundColor,
+  });
+
+  @override
+  State<PulseBadge> createState() => _PulseBadgeState();
+}
+
+class _PulseBadgeState extends State<PulseBadge> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    )..repeat(reverse: true);
+    _animation = Tween<double>(begin: 0.85, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _animation,
+      builder: (context, child) {
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: widget.backgroundColor,
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: widget.color.withValues(alpha: 0.25 * _animation.value),
+                blurRadius: 6 * _animation.value,
+                spreadRadius: 1 * _animation.value,
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: widget.color,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(width: 5),
+              Text(
+                widget.label,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: widget.color,
+                  fontFamily: 'Inter',
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Pop-in animated green success checkmark dialog
+class SuccessTickDialog extends StatefulWidget {
+  final String title;
+  final String? subtitle;
+
+  const SuccessTickDialog({
+    super.key,
+    required this.title,
+    this.subtitle,
+  });
+
+  static Future<void> show(
+    BuildContext context, {
+    required String title,
+    String? subtitle,
+    Duration autoDismiss = const Duration(milliseconds: 1600),
+  }) async {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) => SuccessTickDialog(title: title, subtitle: subtitle),
+    );
+    await Future.delayed(autoDismiss);
+    if (context.mounted) {
+      Navigator.of(context, rootNavigator: true).maybePop();
+    }
+  }
+
+  @override
+  State<SuccessTickDialog> createState() => _SuccessTickDialogState();
+}
+
+class _SuccessTickDialogState extends State<SuccessTickDialog> with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 450),
+    );
+    _scaleAnimation = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.elasticOut,
+    );
+    _controller.forward();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      backgroundColor: AppColors.surface,
+      elevation: 6,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 26),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ScaleTransition(
+              scale: _scaleAnimation,
+              child: Container(
+                width: 60,
+                height: 60,
+                decoration: const BoxDecoration(
+                  color: AppColors.successLight,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.check_rounded,
+                  color: AppColors.success,
+                  size: 36,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              widget.title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: AppColors.textPrimary,
+                fontFamily: 'Inter',
+              ),
+            ),
+            if (widget.subtitle != null) ...[
+              const SizedBox(height: 6),
+              Text(
+                widget.subtitle!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.textSecondary,
+                  fontFamily: 'Inter',
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Shimmer placeholder for elegant skeleton loading
+class ShimmerPlaceholder extends StatelessWidget {
+  final double width;
+  final double height;
+  final double borderRadius;
+
+  const ShimmerPlaceholder({
+    super.key,
+    required this.width,
+    required this.height,
+    this.borderRadius = 8,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Shimmer.fromColors(
+      baseColor: AppColors.grey200,
+      highlightColor: AppColors.grey50,
+      child: Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(borderRadius),
+        ),
+      ),
+    );
+  }
+}
 
 class StatusBadge extends StatelessWidget {
   final String label;
@@ -20,7 +337,7 @@ class StatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
-        color: backgroundColor ?? color.withOpacity(0.12),
+        color: backgroundColor ?? color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(
@@ -98,25 +415,31 @@ class AppCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: padding ?? const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: color ?? AppColors.surface,
-          borderRadius: BorderRadius.circular(borderRadius ?? 16),
-          border: Border.all(color: AppColors.border),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: child,
+    final cardContent = Container(
+      padding: padding ?? const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: color ?? AppColors.surface,
+        borderRadius: BorderRadius.circular(borderRadius ?? 16),
+        border: Border.all(color: AppColors.border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
+      child: child,
     );
+
+    if (onTap != null) {
+      return AppBounceable(
+        onTap: onTap,
+        child: cardContent,
+      );
+    }
+
+    return cardContent;
   }
 }
 

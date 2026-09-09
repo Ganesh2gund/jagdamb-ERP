@@ -18,6 +18,8 @@ import '../../../models/restaurant.dart';
 import '../../../models/cafe.dart';
 import '../../../models/banquet.dart';
 import '../../../repositories/banquet_repository.dart';
+import '../../../models/credit_khata.dart';
+import '../../../repositories/credit_repository.dart';
 import '../../../widgets/common_widgets.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -34,6 +36,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   List<RestaurantOrder> _restaurantOrders = [];
   List<CafeOrder> _cafeOrders = [];
   List<BanquetBooking> _banquetBookings = [];
+  List<CreditKhata> _creditKhatas = [];
   int _unreadNotifications = 0;
   String _hotelName = AppConstants.hotelName;
 
@@ -69,6 +72,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final restaurantRepo = context.read<RestaurantRepository>();
     final cafeRepo = context.read<CafeRepository>();
     final banquetRepo = context.read<BanquetRepository>();
+    final creditRepo = CreditRepository();
 
     final results = await Future.wait([
       roomRepo.getRooms().catchError((_) => <Room>[]),
@@ -77,9 +81,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
       restaurantRepo.getOrders().catchError((_) => <RestaurantOrder>[]),
       cafeRepo.getOrders().catchError((_) => <CafeOrder>[]),
       banquetRepo.getBookings().catchError((_) => <BanquetBooking>[]),
+      creditRepo.getCreditSummaryAndList().catchError((_) => <String, dynamic>{}),
     ]);
 
     if (!mounted) return;
+    final creditRes = results[6] as Map<String, dynamic>? ?? {};
+
     setState(() {
       _rooms = results[0] as List<Room>;
       _bookings = results[1] as List<Booking>;
@@ -87,6 +94,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       _restaurantOrders = results[3] as List<RestaurantOrder>;
       _cafeOrders = results[4] as List<CafeOrder>;
       _banquetBookings = results[5] as List<BanquetBooking>;
+      _creditKhatas = (creditRes['credits'] as List<CreditKhata>?) ?? [];
       _isLoading = false;
     });
   }
@@ -274,7 +282,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
     });
     final banquetRevenue = todayBanquetBookings.fold(0.0, (s, b) => s + b.advancePaid);
 
-    final totalRevenue = roomRevenue + restaurantRevenue + cafeRevenue + banquetRevenue;
+    // Real live revenue collected today from customer credit repayments (ONLY paid/deposited money)
+    double creditRevenue = 0.0;
+    for (final c in _creditKhatas) {
+      if (c.payments.isNotEmpty) {
+        for (final p in c.payments) {
+          if (p.paidAt.year == today.year && p.paidAt.month == today.month && p.paidAt.day == today.day) {
+            creditRevenue += p.amount;
+          }
+        }
+      } else if (c.paidAmount > 0 && c.createdAt.year == today.year && c.createdAt.month == today.month && c.createdAt.day == today.day) {
+        creditRevenue += c.paidAmount;
+      }
+    }
+
+    final totalRevenue = roomRevenue + restaurantRevenue + cafeRevenue + banquetRevenue + creditRevenue;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -297,8 +319,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     _buildRoomStats(totalRooms, occupied, available, cleaning, maintenance),
                     const SizedBox(height: 20),
 
-                    // Revenue card (Dynamic: Rooms + Restaurant + Cafe + Banquet)
-                    _buildRevenueCard(context, totalRevenue, roomRevenue, restaurantRevenue, cafeRevenue, banquetRevenue),
+                    // Revenue card (Dynamic: Rooms + Restaurant + Cafe + Banquet + Credit Recovered)
+                    _buildRevenueCard(context, totalRevenue, roomRevenue, restaurantRevenue, cafeRevenue, banquetRevenue, creditRevenue),
                     const SizedBox(height: 20),
 
                     // Today's activity (Dynamic)
@@ -461,8 +483,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
             _StatCard(label: 'Available', value: '$available', color: AppColors.available),
             const SizedBox(width: 10),
             _StatCard(label: 'Cleaning', value: '$cleaning', color: AppColors.cleaning),
-            const SizedBox(width: 10),
-            _StatCard(label: 'Maint.', value: '$maintenance', color: AppColors.maintenance),
           ],
         ),
       ],
@@ -476,6 +496,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     double restaurantRevenue,
     double cafeRevenue,
     double banquetRevenue,
+    double creditRevenue,
   ) {
     final hasRev = totalRevenue > 0;
     return AppCard(
@@ -494,37 +515,43 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   fontWeight: FontWeight.w500,
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: hasRev ? AppColors.successLight : AppColors.grey100,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      hasRev ? Icons.trending_up : Icons.remove,
-                      color: hasRev ? AppColors.success : AppColors.textSecondary,
-                      size: 14,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      hasRev ? 'Active' : 'Live: ₹0',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: hasRev ? AppColors.success : AppColors.textSecondary,
-                        fontWeight: FontWeight.w700,
-                        fontFamily: 'Inter',
+              hasRev
+                  ? const PulseBadge(
+                      label: 'Active',
+                      color: AppColors.success,
+                      backgroundColor: AppColors.successLight,
+                    )
+                  : Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.grey100,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Row(
+                        children: [
+                          Icon(
+                            Icons.remove,
+                            color: AppColors.textSecondary,
+                            size: 14,
+                          ),
+                          SizedBox(width: 4),
+                          Text(
+                            'Live: ₹0',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.textSecondary,
+                              fontWeight: FontWeight.w700,
+                              fontFamily: 'Inter',
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ],
-                ),
-              ),
             ],
           ),
           const SizedBox(height: 8),
-          Text(
-            AppFormatters.formatCurrency(totalRevenue),
+          AnimatedAmountText(
+            amount: totalRevenue,
             style: const TextStyle(
               fontSize: 32,
               fontWeight: FontWeight.w800,
@@ -545,13 +572,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 20),
           const Divider(),
           const SizedBox(height: 16),
-          // Revenue breakdown: Rooms, Restaurant, Cafe, Banquet
+          // Revenue breakdown: Rooms, Restaurant, Cafe, Banquet, Credit Recovered
           Row(
             children: [
               Expanded(child: _RevenueBreakdown(label: 'Rooms', amount: AppFormatters.formatCurrency(roomRevenue), icon: Icons.hotel)),
               Expanded(child: _RevenueBreakdown(label: 'Restaurant', amount: AppFormatters.formatCurrency(restaurantRevenue), icon: Icons.restaurant)),
               Expanded(child: _RevenueBreakdown(label: 'Cafe', amount: AppFormatters.formatCurrency(cafeRevenue), icon: Icons.local_cafe)),
               Expanded(child: _RevenueBreakdown(label: 'Banquet', amount: AppFormatters.formatCurrency(banquetRevenue), icon: Icons.celebration)),
+              if (creditRevenue > 0)
+                Expanded(child: _RevenueBreakdown(label: 'Credit Rec.', amount: AppFormatters.formatCurrency(creditRevenue), icon: Icons.account_balance_wallet)),
             ],
           ),
         ],
@@ -761,32 +790,41 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
-        decoration: BoxDecoration(
-          color: AppColors.surface,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.border),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6, offset: const Offset(0, 2))],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              value,
-              style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: color, fontFamily: 'Inter'),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontFamily: 'Inter', fontWeight: FontWeight.w500),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+      child: AppBounceable(
+        onTap: () {},
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.border),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.04),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                value,
+                style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800, color: color, fontFamily: 'Inter'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                style: const TextStyle(fontSize: 11, color: AppColors.textSecondary, fontFamily: 'Inter', fontWeight: FontWeight.w500),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
       ),
     );

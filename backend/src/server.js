@@ -26,6 +26,7 @@ import settingsRoutes from './routes/settings.routes.js';
 import reportRoutes, { initReportCycle } from './routes/report.routes.js';
 import cafeRoutes from './routes/cafe.routes.js';
 import banquetRoutes from './routes/banquet.routes.js';
+import creditRoutes from './routes/credit.routes.js';
 
 const fastify = Fastify({
   logger: false, // Clean console output
@@ -103,6 +104,7 @@ fastify.register(settingsRoutes, { prefix: '/api/settings' });
 fastify.register(reportRoutes, { prefix: '/api/report' });
 fastify.register(cafeRoutes, { prefix: '/api/cafe' });
 fastify.register(banquetRoutes, { prefix: '/api/banquet' });
+fastify.register(creditRoutes, { prefix: '/api/credit' });
 
 const PORT = process.env.PORT || 5000;
 const HOST = process.env.HOST || '0.0.0.0';

@@ -8,6 +8,8 @@ import {
   Invoice,
   CafeOrder,
   BanquetBooking,
+  CreditKhata,
+  Admin,
 } from '../models/index.js';
 import mongoose from 'mongoose';
 import { SupabaseMasterService } from '../services/supabaseService.js';
@@ -15,6 +17,7 @@ import { SupabaseMasterService } from '../services/supabaseService.js';
 class MongoBackedStore {
   constructor() {
     this.data = JSON.parse(JSON.stringify(seedData));
+    this.data.creditKhatas = [];
     this.isMongoConnected = false;
   }
 
@@ -220,6 +223,30 @@ class MongoBackedStore {
         this.data.banquetBookings = [];
       }
 
+      // 13. Customer Credit / Udhaar Khatas (Transactional - MongoDB)
+      const dbCredit = await CreditKhata.find().sort({ createdAt: -1 }).lean();
+      if (dbCredit && dbCredit.length > 0) {
+        this.data.creditKhatas = dbCredit.map(c => {
+          const { _id, __v, ...rest } = c;
+          return rest;
+        });
+      } else {
+        this.data.creditKhatas = [];
+      }
+
+      // 14. Single Admin Account (MongoDB)
+      const adminCount = await Admin.countDocuments();
+      if (adminCount === 0) {
+        await Admin.create({
+          email: 'tejas@gmail.com',
+          password: 'tejas4010',
+          name: 'Tejas (Hotel Admin)',
+          role: 'Admin',
+          hotelName: 'Hotel Jagdamb Palace',
+        });
+        console.log('✅ Initialized default Admin account in MongoDB Atlas!');
+      }
+
       this.isMongoConnected = true;
       console.log('✅ MongoDB Atlas synchronized successfully!');
     } catch (err) {
@@ -227,9 +254,26 @@ class MongoBackedStore {
     }
   }
 
-  // Auth
-  validateAdmin(email, password) {
-    return email === 'tejas@gmail.com' && password === 'tejas4010';
+  // Auth - Verifies credentials from MongoDB Atlas database
+  async validateAdmin(email, password) {
+    try {
+      const admin = await Admin.findOne({ email: email.toLowerCase() });
+      if (admin) {
+        return admin.password === password ? admin : null;
+      }
+    } catch (e) {
+      console.error('Error validating admin in Mongo:', e.message);
+    }
+    // Fallback if Mongo is offline or before seed completes
+    if (email === 'tejas@gmail.com' && password === 'tejas4010') {
+      return {
+        email: 'tejas@gmail.com',
+        name: 'Tejas (Hotel Admin)',
+        role: 'Admin',
+        hotelName: 'Hotel Jagdamb Palace',
+      };
+    }
+    return null;
   }
 
   // ── Rooms ───────────────────────────────────────
@@ -1472,7 +1516,11 @@ class MongoBackedStore {
     const activeBanquetBookings = (this.data.banquetBookings || []).filter(b => b.status !== 'cancelled');
     const banquetRevenue = activeBanquetBookings.reduce((sum, b) => sum + (Number(b.advancePaid) || 0) + (Number(b.paidAmount) || 0), 0);
 
-    const revenueToday = roomRevenue + restaurantRevenue + cafeRevenue + banquetRevenue;
+    // Credit / Khata revenue (ONLY recovered/paid money, NOT uncollected credit)
+    const creditRevenue = (this.data.creditKhatas || []).reduce((sum, c) => sum + (Number(c.paidAmount) || 0), 0);
+    const creditOutstanding = (this.data.creditKhatas || []).reduce((sum, c) => sum + (Number(c.balanceAmount) || 0), 0);
+
+    const revenueToday = roomRevenue + restaurantRevenue + cafeRevenue + banquetRevenue + creditRevenue;
     const pendingCheckIns = this.data.bookings.filter(b => b.status === 'confirmed').length;
 
     return {
@@ -1488,9 +1536,122 @@ class MongoBackedStore {
       restaurantRevenue,
       cafeRevenue,
       banquetRevenue,
+      creditRevenue,
+      creditOutstanding,
       pendingCheckIns,
       activeGuests: occupied * 2,
     };
+  }
+
+  // ── Customer Credit / Udhaar Khata ──────────────────────────
+  getCreditKhatas() {
+    return this.data.creditKhatas || [];
+  }
+
+  getCreditKhataById(id) {
+    const strId = String(id).toLowerCase();
+    return (this.data.creditKhatas || []).find(
+      c => String(c.id).toLowerCase() === strId || String(c.billNumber).toLowerCase() === strId
+    );
+  }
+
+  createCreditKhata(payload) {
+    if (!this.data.creditKhatas) this.data.creditKhatas = [];
+
+    const totalAmount = Math.max(0, Number(payload.totalAmount) || 0);
+    const paidAmount = Math.max(0, Number(payload.paidAmount) || 0);
+    const balanceAmount = Math.max(0, totalAmount - paidAmount);
+    const status = balanceAmount <= 0 ? 'paid' : (paidAmount > 0 ? 'partially_paid' : 'pending');
+
+    // Generate clean Bill Number: UDH-1001, UDH-1002, etc.
+    const count = this.data.creditKhatas.length + 1;
+    const billNumber = payload.billNumber || `UDH-${1000 + count}`;
+
+    const payments = [];
+    if (paidAmount > 0) {
+      payments.push({
+        amount: paidAmount,
+        paymentMethod: payload.paymentMethod || 'Cash',
+        paidAt: new Date().toISOString(),
+        notes: 'Initial payment',
+      });
+    }
+
+    const newCredit = {
+      id: 'udh_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      billNumber,
+      customerName: (payload.customerName || 'Customer').trim(),
+      customerPhone: (payload.customerPhone || '').trim(),
+      description: (payload.description || 'Food & Dining Credit').trim(),
+      totalAmount,
+      paidAmount,
+      balanceAmount,
+      status,
+      payments,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    this.data.creditKhatas.unshift(newCredit);
+
+    if (this.isConnected()) {
+      CreditKhata.create(newCredit).catch(e => console.error('Error creating CreditKhata in Mongo:', e.message));
+    }
+
+    return newCredit;
+  }
+
+  recordCreditPayment(id, { amount, paymentMethod = 'Cash', notes = '' }) {
+    const credit = this.getCreditKhataById(id);
+    if (!credit) return null;
+
+    const payAmt = Math.max(0, Number(amount) || 0);
+    if (payAmt <= 0) return credit;
+
+    credit.paidAmount = (Number(credit.paidAmount) || 0) + payAmt;
+    credit.balanceAmount = Math.max(0, (Number(credit.totalAmount) || 0) - credit.paidAmount);
+    credit.status = credit.balanceAmount <= 0 ? 'paid' : 'partially_paid';
+
+    if (!credit.payments) credit.payments = [];
+    credit.payments.push({
+      amount: payAmt,
+      paymentMethod: paymentMethod || 'Cash',
+      paidAt: new Date().toISOString(),
+      notes: notes || '',
+    });
+    credit.updatedAt = new Date().toISOString();
+
+    if (this.isConnected()) {
+      CreditKhata.findOneAndUpdate(
+        { $or: [{ id: credit.id }, { billNumber: credit.billNumber }] },
+        {
+          paidAmount: credit.paidAmount,
+          balanceAmount: credit.balanceAmount,
+          status: credit.status,
+          payments: credit.payments,
+          updatedAt: credit.updatedAt,
+        }
+      ).catch(e => console.error('Error updating CreditKhata payment in Mongo:', e.message));
+    }
+
+    return credit;
+  }
+
+  deleteCreditKhata(id) {
+    const strId = String(id).toLowerCase();
+    const idx = (this.data.creditKhatas || []).findIndex(
+      c => String(c.id).toLowerCase() === strId || String(c.billNumber).toLowerCase() === strId
+    );
+    if (idx !== -1) {
+      const removed = this.data.creditKhatas.splice(idx, 1)[0];
+      if (this.isConnected()) {
+        CreditKhata.deleteOne({
+          $or: [{ id: removed.id }, { billNumber: removed.billNumber }],
+        }).catch(e => console.error('Error deleting CreditKhata in Mongo:', e.message));
+      }
+      return true;
+    }
+    return false;
   }
 }
 

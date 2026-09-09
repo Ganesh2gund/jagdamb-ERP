@@ -21,6 +21,7 @@ import 'package:hotel_erp/features/cafe/screens/cafe_screen.dart';
 import 'package:hotel_erp/features/banquet/screens/banquet_screen.dart';
 import 'package:hotel_erp/features/banquet/screens/new_banquet_booking_screen.dart';
 import 'package:hotel_erp/features/banquet/screens/banquet_detail_screen.dart';
+import 'package:hotel_erp/features/credit/screens/credit_screen.dart';
 
 import 'package:hotel_erp/features/housekeeping/screens/housekeeping_screen.dart';
 import 'package:hotel_erp/features/inventory/screens/inventory_screen.dart';
@@ -165,6 +166,10 @@ class AppRouter {
                 builder: (context, state) => BanquetDetailScreen(bookingId: state.pathParameters['id']!),
               ),
             ],
+          ),
+          GoRoute(
+            path: '/credit',
+            builder: (context, state) => const CreditScreen(),
           ),
           GoRoute(
             path: '/housekeeping',

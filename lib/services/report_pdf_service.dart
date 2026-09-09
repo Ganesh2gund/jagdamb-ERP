@@ -106,6 +106,7 @@ class ReportPdfService {
     final cafeOrders = (reportData['cafeOrders'] as List<dynamic>?) ?? [];
     final banquetBookings = (reportData['banquetBookings'] as List<dynamic>?) ?? [];
     final expenses = (reportData['expenses'] as List<dynamic>?) ?? [];
+    final credits = (reportData['credits'] as List<dynamic>?) ?? [];
 
     final hotelName = _safeText(hotel['name']?.toString() ?? 'Hotel ERP');
     final hotelPhone = _safeText(hotel['phone']?.toString() ?? '');
@@ -120,6 +121,8 @@ class ReportPdfService {
     final restRev = (summary['restaurantRevenue'] as num?)?.toDouble() ?? 0.0;
     final cafeRev = (summary['cafeRevenue'] as num?)?.toDouble() ?? 0.0;
     final banquetRev = (summary['banquetRevenue'] as num?)?.toDouble() ?? 0.0;
+    final creditRev = (summary['creditRevenue'] as num?)?.toDouble() ?? 0.0;
+    final creditDue = (summary['creditOutstanding'] as num?)?.toDouble() ?? 0.0;
     final totalRev = (summary['totalRevenue'] as num?)?.toDouble() ?? 0.0;
     final totalExp = (summary['totalExpenses'] as num?)?.toDouble() ?? 0.0;
     final netProfit = (summary['netProfit'] as num?)?.toDouble() ?? 0.0;
@@ -249,6 +252,8 @@ class ReportPdfService {
             pw.Row(
               children: [
                 _summaryCard('Banquet Rev', _formatCurrency(banquetRev), 'Events & Functions', PdfColors.indigo900, PdfColors.indigo50),
+                pw.SizedBox(width: 4),
+                _summaryCard('Credit Rec.', _formatCurrency(creditRev), 'Udhaar Collected', PdfColors.teal900, PdfColors.teal50),
                 pw.SizedBox(width: 4),
                 _summaryCard('Expenses', _formatCurrency(totalExp), 'Operating Outflow', PdfColors.red800, PdfColors.red50),
                 pw.SizedBox(width: 4),
@@ -522,6 +527,63 @@ class ReportPdfService {
                   4: pw.Alignment.centerRight,
                 },
               ),
+            pw.SizedBox(height: 12),
+
+            // ── Section 6: Customer Credit / Udhaar Khata ─────────
+            _sectionHeader('6', 'CUSTOMER CREDIT & UDHAAR KHATA STATEMENT', credits.length, PdfColors.teal800),
+            if (credits.isEmpty)
+              _emptyNotice('No customer credit or udhaar bills recorded during this 10-day cycle.')
+            else
+              pw.TableHelper.fromTextArray(
+                headers: ['Bill #', 'Date & Time', 'Customer Name', 'Particulars / Details', 'Total Credit', 'Paid (Rec.)', 'Balance Due', 'Status'],
+                data: credits.map((c) {
+                  final total = (c['totalAmount'] as num?)?.toDouble() ?? 0.0;
+                  final paid = (c['paidAmount'] as num?)?.toDouble() ?? 0.0;
+                  final due = (c['balanceAmount'] as num?)?.toDouble() ?? (total - paid).clamp(0.0, double.infinity);
+                  final timeLabel = _formatDateTime(c['createdAt']);
+                  final custPhone = _safeText(c['customerPhone']?.toString() ?? '');
+                  final custName = _safeText(c['customerName']?.toString() ?? 'Customer');
+                  final custLabel = custPhone.isNotEmpty ? '$custName\n($custPhone)' : custName;
+
+                  return [
+                    _safeText(c['billNumber']?.toString() ?? ''),
+                    timeLabel,
+                    custLabel,
+                    _safeText(c['description']?.toString() ?? 'Food & Dining Credit'),
+                    _formatCurrency(total),
+                    _formatCurrency(paid),
+                    due > 0 ? _formatCurrency(due) : 'Rs. 0 (Paid)',
+                    _cleanStatus(c['status']),
+                  ];
+                }).toList(),
+                headerStyle: const pw.TextStyle(fontSize: 7.5, fontWeight: pw.FontWeight.bold, color: PdfColors.white),
+                headerDecoration: const pw.BoxDecoration(color: PdfColors.teal800),
+                headerPadding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+                cellStyle: const pw.TextStyle(fontSize: 7.5),
+                cellPadding: const pw.EdgeInsets.symmetric(horizontal: 5, vertical: 4.5),
+                border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
+                oddRowDecoration: const pw.BoxDecoration(color: PdfColors.grey50),
+                columnWidths: const {
+                  0: pw.FlexColumnWidth(2.0), // Bill #
+                  1: pw.FlexColumnWidth(2.8), // Date
+                  2: pw.FlexColumnWidth(2.8), // Customer
+                  3: pw.FlexColumnWidth(3.8), // Details
+                  4: pw.FlexColumnWidth(2.0), // Total
+                  5: pw.FlexColumnWidth(2.0), // Paid
+                  6: pw.FlexColumnWidth(2.0), // Due
+                  7: pw.FlexColumnWidth(1.8), // Status
+                },
+                cellAlignments: const {
+                  0: pw.Alignment.centerLeft,
+                  1: pw.Alignment.centerLeft,
+                  2: pw.Alignment.centerLeft,
+                  3: pw.Alignment.centerLeft,
+                  4: pw.Alignment.centerRight,
+                  5: pw.Alignment.centerRight,
+                  6: pw.Alignment.centerRight,
+                  7: pw.Alignment.center,
+                },
+              ),
             pw.SizedBox(height: 14),
 
             // ── Grand Summary & Balance Reconciliation ────────────
@@ -551,6 +613,7 @@ class ReportPdfService {
                           '- Total Restaurant / F&B Orders: ${orders.length} orders\n'
                           '- Total Cafe Orders: ${cafeOrders.length} orders\n'
                           '- Total Banquet & Event Bookings: ${banquetBookings.length} events\n'
+                          '- Total Customer Credit Records: ${credits.length} accounts (Recovered: ${_formatCurrency(creditRev)}, Due: ${_formatCurrency(creditDue)})\n'
                           '- Total Operational Expenses: ${expenses.length} voucher(s)\n'
                           '- All records verified and reconciled with Hotel ERP system ledgers.',
                           style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.grey800, lineSpacing: 2),
@@ -574,6 +637,7 @@ class ReportPdfService {
                           _financeRow('Restaurant Revenue:', _formatCurrency(restRev), PdfColors.grey800),
                           _financeRow('Cafe Revenue:', _formatCurrency(cafeRev), PdfColors.grey800),
                           _financeRow('Banquet Revenue:', _formatCurrency(banquetRev), PdfColors.grey800),
+                          _financeRow('Credit Recovered:', _formatCurrency(creditRev), PdfColors.grey800),
                           pw.Divider(color: PdfColors.grey300, thickness: 0.5),
                           _financeRow('Gross Inflow (Total):', _formatCurrency(totalRev), PdfColors.blue900, isBold: true),
                           _financeRow('Less Expenses:', _formatCurrency(totalExp), PdfColors.red800),

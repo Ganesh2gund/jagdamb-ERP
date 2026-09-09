@@ -22,7 +22,7 @@ class _NotificationsScreenState extends State<NotificationsScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 5, vsync: this);
+    _tabController = TabController(length: NotificationCategory.values.length + 1, vsync: this);
     _load();
   }
 
@@ -63,7 +63,6 @@ class _NotificationsScreenState extends State<NotificationsScreen>
       case NotificationCategory.bookings: return Icons.book_outlined;
       case NotificationCategory.payments: return Icons.payments_outlined;
       case NotificationCategory.rooms: return Icons.hotel_outlined;
-      case NotificationCategory.inventory: return Icons.inventory_2_outlined;
       case NotificationCategory.general: return Icons.notifications_outlined;
     }
   }

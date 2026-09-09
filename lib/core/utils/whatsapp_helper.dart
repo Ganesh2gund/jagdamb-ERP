@@ -285,4 +285,112 @@ class WhatsAppHelper {
       return false;
     }
   }
+
+  /// Direct WhatsApp sender for Customer Udhaar / Credit Bills
+  static Future<bool> sendCreditBillWhatsApp({
+    required BuildContext context,
+    required String rawPhone,
+    required String customerName,
+    required String billNumber,
+    required double totalAmount,
+    required double paidAmount,
+    required double balanceAmount,
+    required String status,
+    String? description,
+    String? hotelName,
+    DateTime? date,
+    String? lastPaymentMethod,
+  }) async {
+    final formattedPhone = sanitizePhoneNumber(rawPhone);
+    if (formattedPhone == null || formattedPhone.isEmpty) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Invalid or missing phone number.'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return false;
+    }
+
+    final hName = (hotelName != null && hotelName.trim().isNotEmpty)
+        ? hotelName.trim()
+        : (WebPrinter.hotelName.trim().isNotEmpty ? WebPrinter.hotelName.trim() : 'Hotel Jagdamb');
+
+    final isSettled = balanceAmount <= 0 || status.toLowerCase() == 'paid';
+    final d = date ?? DateTime.now();
+    final day = d.day.toString().padLeft(2, '0');
+    final mon = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][d.month - 1];
+    final yr = d.year;
+    final hour = d.hour > 12 ? d.hour - 12 : (d.hour == 0 ? 12 : d.hour);
+    final min = d.minute.toString().padLeft(2, '0');
+    final ampm = d.hour >= 12 ? 'PM' : 'AM';
+    final dateStr = '$day $mon $yr, $hour:$min $ampm';
+
+    final buffer = StringBuffer();
+    buffer.writeln('🧾 *${hName.toUpperCase()}*');
+    final hAddress = WebPrinter.hotelAddress.trim();
+    final hPhone = WebPrinter.hotelPhone.trim();
+    if (hAddress.isNotEmpty) {
+      buffer.writeln('📍 _${hAddress}_');
+    }
+    if (hPhone.isNotEmpty) {
+      buffer.writeln('📞 _Phone: ${hPhone}_');
+    }
+    buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━');
+    buffer.writeln(isSettled ? '       *PAYMENT RECEIPT*' : '    *CREDIT BILL / INVOICE*');
+    buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━');
+    buffer.writeln('*Bill No:* #$billNumber');
+    buffer.writeln('*Date:* $dateStr');
+    buffer.writeln('*Customer:* ${customerName.trim().isEmpty ? "Valued Customer" : customerName.trim()}');
+    buffer.writeln('*Account:* Credit / Khata Account');
+    buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━');
+    if (description != null && description.trim().isNotEmpty) {
+      buffer.writeln('*Particulars / Details:*');
+      buffer.writeln('• ${description.trim()}');
+      buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━');
+    }
+    buffer.writeln('*Total Bill Amount:* ₹${totalAmount.toStringAsFixed(0)}');
+    buffer.writeln('*Amount Paid:* ₹${paidAmount.toStringAsFixed(0)}');
+    buffer.writeln('*Balance Due:* ₹${balanceAmount.toStringAsFixed(0)}');
+
+    if (isSettled) {
+      final methodStr = (lastPaymentMethod != null && lastPaymentMethod.isNotEmpty) ? ' ($lastPaymentMethod)' : '';
+      buffer.writeln('*Status:* ✅ *FULLY PAID$methodStr*');
+    } else if (paidAmount > 0) {
+      buffer.writeln('*Status:* ⏳ *PARTIALLY PAID (₹${balanceAmount.toStringAsFixed(0)} Balance Due)*');
+    } else {
+      buffer.writeln('*Status:* ⏳ *PENDING / DUE (₹${balanceAmount.toStringAsFixed(0)})*');
+    }
+    buffer.writeln('━━━━━━━━━━━━━━━━━━━━━━');
+    if (isSettled) {
+      buffer.writeln('Thank you! Your payment has been received and account is fully cleared. 🙏');
+    } else {
+      buffer.writeln('Please clear the remaining balance at your earliest convenience. Thank you! 🙏');
+    }
+
+    final encoded = Uri.encodeComponent(buffer.toString());
+    final url = Uri.parse('https://wa.me/$formattedPhone?text=$encoded');
+
+    try {
+      final launched = await launchUrl(url, mode: LaunchMode.externalApplication);
+      if (!launched) {
+        await launchUrl(url, mode: LaunchMode.platformDefault);
+      }
+      return true;
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Unable to open WhatsApp.'),
+            backgroundColor: Colors.redAccent,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+      return false;
+    }
+  }
 }

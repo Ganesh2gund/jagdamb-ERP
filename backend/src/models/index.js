@@ -7,4 +7,5 @@ export { Invoice } from './Invoice.js';
 export { ReportCycle } from './ReportCycle.js';
 export { CafeOrder } from './CafeOrder.js';
 export { BanquetBooking } from './BanquetBooking.js';
-
+export { CreditKhata } from './CreditKhata.js';
+export { Admin } from './Admin.js';

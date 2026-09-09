@@ -11,29 +11,29 @@ export default async function authRoutes(fastify, options) {
       });
     }
 
-    const isValid = store.validateAdmin(email.trim().toLowerCase(), password.trim());
-    if (!isValid) {
+    const adminUser = await store.validateAdmin(email.trim().toLowerCase(), password.trim());
+    if (!adminUser) {
       return reply.code(401).send({
         success: false,
-        message: 'Invalid email or password. Use tejas@gmail.com / tejas4010',
+        message: 'Invalid email or password',
       });
     }
 
     const token = fastify.jwt.sign({
-      email: 'tejas@gmail.com',
-      role: 'Admin',
-      name: 'Tejas (Hotel Admin)',
+      email: adminUser.email,
+      role: adminUser.role || 'Admin',
+      name: adminUser.name || 'Hotel Admin',
     });
 
     return {
       success: true,
       token,
       user: {
-        id: 'adm_1',
-        email: 'tejas@gmail.com',
-        name: 'Tejas (Hotel Admin)',
-        role: 'Admin',
-        hotelName: 'Grand Horizon Luxury Hotel & Suites',
+        id: adminUser._id ? String(adminUser._id) : 'adm_1',
+        email: adminUser.email,
+        name: adminUser.name || 'Hotel Admin',
+        role: adminUser.role || 'Admin',
+        hotelName: adminUser.hotelName || 'Hotel Jagdamb Palace',
       },
     };
   });

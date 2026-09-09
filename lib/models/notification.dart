@@ -1,4 +1,4 @@
-enum NotificationCategory { bookings, payments, rooms, inventory, general }
+enum NotificationCategory { bookings, payments, rooms, general }
 enum NotificationPriority { low, medium, high }
 
 extension NotificationCategoryExt on NotificationCategory {
@@ -7,7 +7,6 @@ extension NotificationCategoryExt on NotificationCategory {
       case NotificationCategory.bookings: return 'Bookings';
       case NotificationCategory.payments: return 'Payments';
       case NotificationCategory.rooms: return 'Rooms';
-      case NotificationCategory.inventory: return 'Inventory';
       case NotificationCategory.general: return 'General';
     }
   }
