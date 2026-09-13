@@ -18,6 +18,7 @@ import {
   Invoice,
   CafeOrder,
   BanquetBooking,
+  CreditKhata,
 } from '../models/index.js';
 import { store } from '../store/index.js';
 import { hotelSettings } from './settings.routes.js';
@@ -103,6 +104,14 @@ export async function performDataCleanup(reason = 'Manual/Scheduled Cleanup') {
       // Clean only paid cafe orders
       await CafeOrder.deleteMany({ isPaid: true });
 
+      // Clean only settled/fully-paid credit khata bills (100% PRESERVES unsettled bills with balance due)
+      await CreditKhata.deleteMany({
+        $or: [
+          { status: 'paid' },
+          { balanceAmount: { $lte: 0 } },
+        ],
+      });
+
       // Clean period expenses, notifications & settled invoices
       await Expense.deleteMany({});
       await Notification.deleteMany({});
@@ -130,6 +139,33 @@ export async function performDataCleanup(reason = 'Manual/Scheduled Cleanup') {
     store.data.cafeOrders = (store.data.cafeOrders || []).filter(
       o => o.isPaid !== true
     );
+
+    // Retain only unsettled credit khatas (bills with pending balance due)
+    store.data.creditKhatas = (store.data.creditKhatas || []).filter(
+      c => (Number(c.balanceAmount) || 0) > 0 && c.status !== 'paid'
+    );
+
+    // For retained accounts with partial payments, roll over remaining balance into the new cycle:
+    for (const c of store.data.creditKhatas) {
+      if ((Number(c.paidAmount) || 0) > 0) {
+        c.totalAmount = Number(c.balanceAmount) || 0;
+        c.paidAmount = 0;
+        c.payments = [];
+        c.status = 'pending';
+        if (mongoose.connection.readyState === 1 && c.id) {
+          CreditKhata.findOneAndUpdate(
+            { id: c.id },
+            {
+              totalAmount: c.totalAmount,
+              paidAmount: 0,
+              balanceAmount: c.totalAmount,
+              payments: [],
+              status: 'pending',
+            }
+          ).catch(e => console.error('Error rolling over credit in Mongo:', e.message));
+        }
+      }
+    }
 
     // Reset period expenses & notifications
     store.data.expenses = [];
